@@ -718,6 +718,12 @@ textarea.form-input {
     gap: 16px;
 }
 
+.hisse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+}
+
 .result-item {
     display: flex;
     flex-direction: column;

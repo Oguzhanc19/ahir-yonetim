@@ -848,7 +848,7 @@ function renderKurbanlikCiktiTable() {
     });
     html += '</tbody></table></div>';
     
-    html += '<div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px solid var(--color-border); padding-top:12px; font-size:0.9em;">';
+    html += '<div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; font-weight:700; border-top:1px solid var(--color-border); padding-top:12px; font-size:0.9em;">';
     html += '<span>Toplam Satış: ' + formatMoney(g.toplamSatisFiyati) + '</span>';
     html += '<span>Alınan: ' + formatMoney(g.alinanToplam) + '</span>';
     html += '<span class="' + (kalanAlacak > 0 ? 'text-danger' : 'text-success') + '">Kalan: ' + formatMoney(kalanAlacak) + '</span>';
