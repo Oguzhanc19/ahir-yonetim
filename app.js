@@ -481,32 +481,55 @@ function searchAnimal() {
 
 function getSalesHtml(kupeNo) {
   var sales = appData.sales.filter(function(s) { return s.kupeNo === kupeNo; });
-  if (sales.length === 0) return '';
+  var kCikti = (appData.kurbanlikCikti || []).filter(function(k) { return k.kupeNo === kupeNo; });
 
-  var isHisseli = sales.some(function(s) { return s.satisTuru && s.satisTuru.includes('Hisse'); });
+  if (sales.length === 0 && kCikti.length === 0) return '';
+
+  var isHisseli = sales.some(function(s) { return s.satisTuru && s.satisTuru.includes('Hisse'); }) || kCikti.length > 0;
+  
   if (sales.length > 1 || isHisseli) {
     var html = '<div class="mt-3"><h3 class="card-header" style="font-size:1em; margin-bottom:8px;">Hissedar Listesi</h3>';
     html += '<div style="overflow-x:auto;"><table class="data-table" style="font-size: 0.85em;">';
     html += '<thead><tr><th>Müşteri</th><th>Pay</th><th>Satış F.</th><th>Alınan</th><th>Kalan</th></tr></thead><tbody>';
-    sales.forEach(function(s) {
-      var kalan = s.satisFiyati - s.alinanToplam;
+    
+    kCikti.forEach(function(k) {
+      var sFiyat = parseFloat(k.satisFiyati) || 0;
+      var aUcret = parseFloat(k.alinanUcret) || 0;
+      var kalan = sFiyat - aUcret;
       html += '<tr>';
-      html += '<td data-label="Müşteri">' + escapeHtml(s.musteriAdi) + '</td>';
-      html += '<td data-label="Pay">' + escapeHtml(s.satisTuru) + '</td>';
-      html += '<td data-label="Satış F.">' + formatMoney(s.satisFiyati) + '</td>';
-      html += '<td data-label="Alınan">' + formatMoney(s.alinanToplam) + '</td>';
+      html += '<td data-label="Müşteri">' + escapeHtml(k.musteriAdi) + '</td>';
+      html += '<td data-label="Pay">1</td>';
+      html += '<td data-label="Satış F.">' + formatMoney(sFiyat) + '</td>';
+      html += '<td data-label="Alınan">' + formatMoney(aUcret) + '</td>';
       html += '<td data-label="Kalan">' + formatMoney(kalan) + '</td>';
       html += '</tr>';
     });
+
+    sales.forEach(function(s) {
+      var sFiyat = parseFloat(s.satisFiyati) || 0;
+      var aUcret = parseFloat(s.alinanToplam) || 0;
+      var kalan = sFiyat - aUcret;
+      html += '<tr>';
+      html += '<td data-label="Müşteri">' + escapeHtml(s.musteriAdi) + '</td>';
+      html += '<td data-label="Pay">' + escapeHtml(s.satisTuru) + '</td>';
+      html += '<td data-label="Satış F.">' + formatMoney(sFiyat) + '</td>';
+      html += '<td data-label="Alınan">' + formatMoney(aUcret) + '</td>';
+      html += '<td data-label="Kalan">' + formatMoney(kalan) + '</td>';
+      html += '</tr>';
+    });
+
     html += '</tbody></table></div></div>';
     return html;
   } else {
-    var s = sales[0];
+    var s = sales[0] || kCikti[0];
+    var sFiyat = parseFloat(s.satisFiyati) || 0;
+    var aUcret = parseFloat(s.alinanToplam || s.alinanUcret) || 0;
+    
     var html = '<div class="mt-3"><h3 class="card-header" style="font-size:1em; margin-bottom:8px;">Satış Detayı</h3>';
     html += '<div class="result-grid">';
     html += '<div class="result-item"><span class="result-label">Müşteri</span><span class="result-value">' + escapeHtml(s.musteriAdi) + '</span></div>';
-    html += '<div class="result-item"><span class="result-label">Satış Fiyatı</span><span class="result-value">' + formatMoney(s.satisFiyati) + '</span></div>';
-    html += '<div class="result-item"><span class="result-label">Alınan Ücret</span><span class="result-value">' + formatMoney(s.alinanToplam) + '</span></div>';
+    html += '<div class="result-item"><span class="result-label">Satış Fiyatı</span><span class="result-value">' + formatMoney(sFiyat) + '</span></div>';
+    html += '<div class="result-item"><span class="result-label">Alınan Ücret</span><span class="result-value">' + formatMoney(aUcret) + '</span></div>';
     html += '</div></div>';
     return html;
   }
@@ -918,13 +941,16 @@ function updateDashboard() {
   var damizlik = animals.filter(function(a) { return a.durum === 'DAMIZLIK'; }).length;
 
   // Mali istatistikler
+  var kCikti = appData.kurbanlikCikti || [];
+  var kCiktiSatis = kCikti.reduce(function(s, k) { return s + (parseFloat(k.satisFiyati) || 0); }, 0);
+  
   var toplamAlis = animals.reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
-  var toplamSatis = sales.reduce(function(s, sale) { return s + (sale.satisFiyati || 0); }, 0);
+  var toplamSatis = sales.reduce(function(s, sale) { return s + (sale.satisFiyati || 0); }, 0) + kCiktiSatis;
   var toplamYem = feeds.reduce(function(s, f) { return s + (f.odenenFiyat || 0); }, 0);
   var toplamVet = vets.reduce(function(s, v) { return s + (v.toplamFiyat || 0); }, 0);
 
   // Sadece satılan hayvanların alış fiyatlarının toplamı
-  var satilanKupelar = sales.map(function(s) { return s.kupeNo; });
+  var satilanKupelar = sales.map(function(s) { return s.kupeNo; }).concat(kCikti.map(function(k) { return k.kupeNo; }));
   var satilanAlis = animals.filter(function(a) {
     return satilanKupelar.includes(a.kupeNo);
   }).reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
@@ -959,33 +985,57 @@ function updateDashboard() {
 function updateReport() {
   updateDashboard(); // Rapor aynı istatistikleri kullanır
 
-  var dashboardData = getDashboardData();
+  var animals = appData.animals || [];
+  var sales = appData.sales || [];
+  var feeds = appData.feedPurchases || [];
+  var vets = appData.vetExpenses || [];
+  var kCikti = appData.kurbanlikCikti || [];
 
-  setText('rapor-toplam-hayvan', dashboardData.animals.length);
-  setText('rapor-aktif', dashboardData.aktif);
-  setText('rapor-pasif', dashboardData.pasif);
-  setText('rapor-kurbanlik', dashboardData.kurbanlik);
-  setText('rapor-besi', dashboardData.besi);
-  setText('rapor-damizlik', dashboardData.damizlik);
-  setText('rapor-toplam-alis', formatMoney(dashboardData.toplamAlis));
-  setText('rapor-toplam-satis', formatMoney(dashboardData.toplamSatis));
-  setText('rapor-toplam-yem', formatMoney(dashboardData.toplamYem));
-  setText('rapor-toplam-vet', formatMoney(dashboardData.toplamVet));
-  setText('rapor-kar-zarar', formatMoney(dashboardData.karZarar));
+  var aktif = animals.filter(function(a) { return a.satisDurumu === 'STOKTA'; }).length;
+  var pasif = animals.filter(function(a) { return a.satisDurumu !== 'STOKTA'; }).length;
+  var kurbanlik = animals.filter(function(a) { return a.durum === 'KURBANLIK'; }).length;
+  var besi = animals.filter(function(a) { return a.durum === 'BESİ'; }).length;
+  var damizlik = animals.filter(function(a) { return a.durum === 'DAMIZLIK'; }).length;
+
+  var kCiktiSatis = kCikti.reduce(function(s, k) { return s + (parseFloat(k.satisFiyati) || 0); }, 0);
+  var toplamAlis = animals.reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
+  var toplamSatis = sales.reduce(function(s, sale) { return s + (sale.satisFiyati || 0); }, 0) + kCiktiSatis;
+  var toplamYem = feeds.reduce(function(s, f) { return s + (f.odenenFiyat || 0); }, 0);
+  var toplamVet = vets.reduce(function(s, v) { return s + (v.toplamFiyat || 0); }, 0);
+
+  var satilanKupelar = sales.map(function(s) { return s.kupeNo; }).concat(kCikti.map(function(k) { return k.kupeNo; }));
+  var satilanAlis = animals.filter(function(a) {
+    return satilanKupelar.includes(a.kupeNo);
+  }).reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
+
+  var karZarar = toplamSatis - satilanAlis - toplamYem - toplamVet;
+  var toplamMaliyet = satilanAlis + toplamYem + toplamVet;
+
+  setText('rapor-toplam-hayvan', animals.length);
+  setText('rapor-aktif', aktif);
+  setText('rapor-pasif', pasif);
+  setText('rapor-kurbanlik', kurbanlik);
+  setText('rapor-besi', besi);
+  setText('rapor-damizlik', damizlik);
+  setText('rapor-toplam-alis', formatMoney(toplamAlis));
+  setText('rapor-toplam-satis', formatMoney(toplamSatis));
+  setText('rapor-toplam-yem', formatMoney(toplamYem));
+  setText('rapor-toplam-vet', formatMoney(toplamVet));
+  setText('rapor-kar-zarar', formatMoney(karZarar));
   
   var karYuzdesi = 0;
-  if (dashboardData.toplamMaliyet > 0) {
-    karYuzdesi = (dashboardData.karZarar / dashboardData.toplamMaliyet) * 100;
+  if (toplamMaliyet > 0) {
+    karYuzdesi = (karZarar / toplamMaliyet) * 100;
   }
   setText('rapor-kar-yuzde', '%' + karYuzdesi.toFixed(1));
 
   var karEl = document.getElementById('rapor-kar-zarar');
   if (karEl) {
-    karEl.style.color = dashboardData.karZarar >= 0 ? '#10b981' : '#ef4444';
+    karEl.style.color = karZarar >= 0 ? '#10b981' : '#ef4444';
   }
   var yuzdeEl = document.getElementById('rapor-kar-yuzde');
   if (yuzdeEl) {
-    yuzdeEl.style.color = dashboardData.karZarar >= 0 ? '#10b981' : '#ef4444';
+    yuzdeEl.style.color = karZarar >= 0 ? '#10b981' : '#ef4444';
   }
 
   // Ek rapor detayları - Padok bazlı dağılım
