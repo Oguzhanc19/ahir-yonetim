@@ -4,15 +4,32 @@
 // ==========================================
 
 // ==========================================
-// STATE MANAGEMENT
+// STATE MANAGEMENT & FIREBASE
 // ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCIA3E8IRO61O9rBiJjQCuW4k5N8HdBJfI",
+  authDomain: "aliahir.firebaseapp.com",
+  databaseURL: "https://aliahir-default-rtdb.firebaseio.com",
+  projectId: "aliahir",
+  storageBucket: "aliahir.firebasestorage.app",
+  messagingSenderId: "248719577025",
+  appId: "1:248719577025:web:4be5fd6614fd166d026940"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
 let appData = {};
+let isFirstLoad = true;
 
 function loadData() {
-  try {
-    const saved = localStorage.getItem('ahirYonetimData');
-    if (saved) {
-      appData = JSON.parse(saved);
+  db.ref('ahirData').on('value', function(snapshot) {
+    var data = snapshot.val();
+    if (data) {
+      appData = data;
       // Eksik alanları varsayılan veriden tamamla
       if (!appData.animals) appData.animals = [];
       if (!appData.sales) appData.sales = [];
@@ -23,23 +40,44 @@ function loadData() {
       if (!appData.users) {
         appData.users = JSON.parse(JSON.stringify(DEFAULT_DATA.users));
       }
+
+      // Local storage backup
+      localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
+
+      // Re-render UI
+      renderAnimalTable();
+      renderCustomerTable();
+      renderSalesTable();
+      renderFeedTable();
+      renderVetTable();
+      renderAdminTable();
+      updateReport();
+
+      if (!isFirstLoad) {
+          // console.log("Bulut verisi güncellendi!");
+      }
+      isFirstLoad = false;
     } else {
-      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-      saveData();
+      // Firebase boşsa localstorage'dan veya varsayılandan al
+      const saved = localStorage.getItem('ahirYonetimData');
+      if (saved) {
+        appData = JSON.parse(saved);
+        saveData(); // Push to Firebase
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+      }
     }
-  } catch (err) {
-    console.error('Veri yüklenirken hata:', err);
-    appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-    saveData();
-  }
+  });
 }
 
 function saveData() {
   try {
+    db.ref('ahirData').set(appData);
     localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
   } catch (err) {
     console.error('Veri kaydedilirken hata:', err);
-    showToast('Veri kaydedilemedi! Depolama alanı dolu olabilir.', 'error');
+    showToast('Bulut sunucuya bağlanılamadı! Sadece cihaza kaydedildi.', 'error');
   }
 }
 
@@ -1480,9 +1518,10 @@ function attemptLogin() {
   const pass = (document.getElementById('login-password').value || '').trim();
   const errorEl = document.getElementById('login-error');
 
-  // Load data to check users if appData is empty
-  if (!appData.users) {
-      loadData();
+  if (!appData || !appData.users) {
+      errorEl.textContent = "Sunucuya bağlanıyor, lütfen biraz bekleyip tekrar deneyin...";
+      errorEl.style.display = 'block';
+      return;
   }
 
   const isValid = appData.users.some(function(u) { return u.user === user && u.pass === pass; });
@@ -1495,6 +1534,7 @@ function attemptLogin() {
     errorEl.style.display = 'none';
     initializeApp(); // Start app after login
   } else {
+    errorEl.textContent = "Hatalı kullanıcı adı veya şifre!";
     errorEl.style.display = 'block';
   }
 }
@@ -1521,6 +1561,9 @@ if ('serviceWorker' in navigator) {
 // EVENT LISTENERS & INIT
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
+  // Veriyi arkaplanda yükle ki login ekranında users hazır olsun
+  loadData();
+
   // Login kontrolü
   if (!checkLogin()) {
     return; // Stop initialization until login
@@ -1530,9 +1573,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-  // Veriyi yükle
-  loadData();
-
   // Otomatik yedekleme kontrolü (7 gün)
   if (!appData.lastBackupDate) {
     appData.lastBackupDate = new Date().toISOString();
