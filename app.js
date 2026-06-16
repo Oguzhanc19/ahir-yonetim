@@ -109,6 +109,9 @@ function refreshSection(sectionId) {
     case 'section-rapor':
       updateReport();
       break;
+    case 'section-musteri-listesi':
+      renderCustomerTable();
+      break;
     default:
       break;
   }
@@ -1467,6 +1470,25 @@ document.addEventListener('DOMContentLoaded', function() {
   // Veriyi yükle
   loadData();
 
+  // Otomatik yedekleme kontrolü (7 gün)
+  if (!appData.lastBackupDate) {
+    appData.lastBackupDate = new Date().toISOString();
+    saveData();
+  } else {
+    var lastBackup = new Date(appData.lastBackupDate);
+    var now = new Date();
+    var diffDays = Math.floor((now - lastBackup) / (1000 * 60 * 60 * 24));
+    if (diffDays >= 7) {
+      setTimeout(function() {
+        if (confirm("⚠️ 1 Haftadır yedekleme yapmadınız!\nVerilerinizin güvenliği için yedekleme dosyasını şimdi indirmek ister misiniz?")) {
+          exportData();
+          appData.lastBackupDate = new Date().toISOString();
+          saveData();
+        }
+      }, 1500); // Popup delay
+    }
+  }
+
   // Dashboard'u güncelle
   updateDashboard();
 
@@ -1756,3 +1778,179 @@ function renderAlerts() {
 
   list.innerHTML = html;
 }
+
+// ==========================================
+// MÜŞTERİ LİSTESİ (CUSTOMER MANAGEMENT)
+// ==========================================
+function renderCustomerTable() {
+  var tbody = document.querySelector('#table-musteri-listesi tbody');
+  if (!tbody) return;
+
+  var filter = (document.getElementById('filter-musteri-listesi')?.value || '').toLowerCase();
+
+  var customers = {};
+
+  // Eski kurbanlık çıktı kayıtları
+  (appData.kurbanlikCikti || []).forEach(function(k) {
+    var name = (k.musteriAdi || '').trim();
+    if (!name) return;
+    if (!customers[name]) {
+      customers[name] = { ad: name, hayvanCount: 0, hisseCount: 0, alisveris: 0, odenen: 0 };
+    }
+    customers[name].hisseCount++;
+    customers[name].alisveris += parseFloat(k.satisFiyati) || 0;
+    customers[name].odenen += parseFloat(k.alinanUcret) || 0;
+  });
+
+  // Normal satışlar (Hisseli veya Tam)
+  (appData.sales || []).forEach(function(s) {
+    var name = (s.musteriAdi || '').trim();
+    if (!name) return;
+    if (!customers[name]) {
+      customers[name] = { ad: name, hayvanCount: 0, hisseCount: 0, alisveris: 0, odenen: 0 };
+    }
+    
+    var isHisse = s.satisTuru && s.satisTuru.includes('Hisse');
+    if (isHisse) {
+      customers[name].hisseCount += (parseInt(s.satisTuru) || 1);
+    } else {
+      customers[name].hayvanCount++;
+    }
+    
+    customers[name].alisveris += parseFloat(s.satisFiyati) || 0;
+    customers[name].odenen += parseFloat(s.alinanToplam) || 0;
+  });
+
+  var list = Object.values(customers).filter(function(c) {
+    return c.ad.toLowerCase().includes(filter);
+  });
+
+  // Kalan borca göre çoktan aza sıralama
+  list.sort(function(a, b) {
+    var borcA = a.alisveris - a.odenen;
+    var borcB = b.alisveris - b.odenen;
+    return borcB - borcA;
+  });
+
+  var totalAlacakli = 0;
+  var totalAlacak = 0;
+  var totalOdenen = 0;
+
+  var html = '';
+  list.forEach(function(c) {
+    var kalan = c.alisveris - c.odenen;
+    if (kalan > 0) {
+      totalAlacakli++;
+      totalAlacak += kalan;
+    }
+    totalOdenen += c.odenen;
+
+    var satinAldigi = [];
+    if (c.hayvanCount > 0) satinAldigi.push(c.hayvanCount + ' Hayvan');
+    if (c.hisseCount > 0) satinAldigi.push(c.hisseCount + ' Hisse');
+    var aldigiText = satinAldigi.join(', ') || '-';
+
+    html += '<tr>';
+    html += '<td data-label="Seç"><input type="checkbox" value="' + escapeHtml(c.ad) + '"></td>';
+    html += '<td data-label="Müşteri Adı" class="font-bold">' + escapeHtml(c.ad) + '</td>';
+    html += '<td data-label="Satın Aldığı">' + escapeHtml(aldigiText) + '</td>';
+    html += '<td data-label="Toplam Alışveriş">' + formatMoney(c.alisveris) + '</td>';
+    html += '<td data-label="Ödenen Tutar">' + formatMoney(c.odenen) + '</td>';
+    html += '<td data-label="Kalan Borç" class="font-bold ' + (kalan > 0 ? 'text-danger' : 'text-success') + '">' + formatMoney(kalan) + '</td>';
+    html += '<td data-label="İşlem"><button class="btn btn-sm btn-outline" onclick="editCustomerName(\'' + escapeHtml(c.ad).replace(/'/g, "\\'") + '\')">✏️ Adını Değiştir</button></td>';
+    html += '</tr>';
+  });
+
+  if (list.length === 0) {
+    html = '<tr><td colspan="6" class="text-center">Müşteri bulunamadı</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+
+  setText('ml-toplam-musteri', list.length);
+  setText('ml-alacakli-sayisi', totalAlacakli);
+  setText('ml-toplam-alacak', formatMoney(totalAlacak));
+  setText('ml-toplam-odenen', formatMoney(totalOdenen));
+}
+
+function editCustomerName(oldName) {
+  var newName = prompt("'" + oldName + "' adlı müşterinin yeni adını girin:", oldName);
+  if (!newName || newName.trim() === '' || newName === oldName) return;
+  newName = newName.trim();
+
+  var changed = 0;
+  (appData.sales || []).forEach(function(s) {
+    if ((s.musteriAdi || '').trim() === oldName) {
+      s.musteriAdi = newName;
+      changed++;
+    }
+  });
+  (appData.kurbanlikCikti || []).forEach(function(k) {
+    if ((k.musteriAdi || '').trim() === oldName) {
+      k.musteriAdi = newName;
+      changed++;
+    }
+  });
+
+  if (changed > 0) {
+    saveData();
+    renderCustomerTable();
+    updateDashboard(); // Refresh stats
+    if (typeof renderSalesTable === 'function') renderSalesTable();
+    if (typeof renderKurbanlikCiktiTable === 'function') renderKurbanlikCiktiTable();
+    showToast(changed + " adet kayıtta müşteri adı güncellendi!", "success");
+  }
+}
+
+function deleteSelectedCustomers() {
+  var checkboxes = document.querySelectorAll('#table-musteri-listesi tbody input[type="checkbox"]:checked');
+  if (checkboxes.length === 0) {
+    showToast('Silmek için müşteri seçin!', 'error');
+    return;
+  }
+
+  if (!confirm(checkboxes.length + ' müşteriyi ve onlara ait TÜM satış kayıtlarını silmek istediğinize emin misiniz?\n(Bu işlem geri alınamaz ve bu müşterilere satılan hayvanlar tekrar STOKTA olarak işaretlenir!)')) {
+    return;
+  }
+
+  var namesToDelete = Array.from(checkboxes).map(function(cb) {
+    return cb.value;
+  });
+
+  var countSales = 0;
+  
+  // Normal satışlardan sil ve hayvan durumunu düzelt
+  appData.sales = appData.sales.filter(function(s) {
+    if (namesToDelete.includes((s.musteriAdi || '').trim())) {
+      var animal = appData.animals.find(function(a) { return a.kupeNo === s.kupeNo; });
+      if (animal) animal.satisDurumu = 'STOKTA';
+      countSales++;
+      return false;
+    }
+    return true;
+  });
+
+  // Kurbanlık Çıktıdan sil
+  appData.kurbanlikCikti = appData.kurbanlikCikti.filter(function(k) {
+    if (namesToDelete.includes((k.musteriAdi || '').trim())) {
+      var animal = appData.animals.find(function(a) { return a.kupeNo === k.kupeNo; });
+      if (animal) animal.satisDurumu = 'STOKTA';
+      countSales++;
+      return false;
+    }
+    return true;
+  });
+
+  saveData();
+  renderCustomerTable();
+  updateDashboard();
+  if (typeof renderSalesTable === 'function') renderSalesTable();
+  if (typeof renderKurbanlikCiktiTable === 'function') renderKurbanlikCiktiTable();
+  
+  var chkAll = document.querySelector('#table-musteri-listesi thead input[type="checkbox"]');
+  if (chkAll) chkAll.checked = false;
+
+  showToast(countSales + ' adet satış kaydı silindi ve müşteriler kaldırıldı.', 'success');
+}
+
+

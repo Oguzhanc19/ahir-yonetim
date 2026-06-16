@@ -44,6 +44,9 @@
             <div class="nav-item" data-section="section-kurbanlik-satisi" onclick="navigateTo('section-kurbanlik-satisi')">
                 <span class="nav-icon">📑</span><span class="nav-label">Satış Geçmişi</span>
             </div>
+            <div class="nav-item" data-section="section-musteri-listesi" onclick="navigateTo('section-musteri-listesi')">
+                <span class="nav-icon">👥</span><span class="nav-label">Müşteri Listesi</span>
+            </div>
             <div class="nav-item" data-section="section-yem-ekle" onclick="navigateTo('section-yem-ekle')">
                 <span class="nav-icon">🌾</span><span class="nav-label">Yem Alımı</span>
             </div>
@@ -411,6 +414,50 @@
                             <th>Alınan Toplam</th>
                             <th>Kalan</th>
                             <th>Kâr %</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== MÜŞTERİ LİSTESİ ===== -->
+        <div id="section-musteri-listesi" class="section">
+            <h1 class="section-title"><span>👥</span> Müşteri Listesi</h1>
+
+            <div class="stats-grid" id="musteri-ozet">
+                <div class="stat-card">
+                    <div class="stat-value" id="ml-toplam-musteri">0</div>
+                    <div class="stat-label">Toplam Müşteri</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="ml-alacakli-sayisi">0</div>
+                    <div class="stat-label">Alacaklı Olunan Kişi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-danger" id="ml-toplam-alacak">0 ₺</div>
+                    <div class="stat-label">Piyasadaki Alacak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-success" id="ml-toplam-odenen">0 ₺</div>
+                    <div class="stat-label">Tahsil Edilen</div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <input type="text" id="filter-musteri-listesi" class="form-input" placeholder="Müşteri adına göre ara..." oninput="renderCustomerTable()">
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="table-musteri-listesi">
+                    <thead>
+                        <tr>
+                            <th>Müşteri Adı</th>
+                            <th>Satın Aldığı Hayvan/Hisse</th>
+                            <th>Toplam Alışveriş</th>
+                            <th>Ödenen Tutar</th>
+                            <th>Kalan Borç</th>
+                            <th style="width: 100px;">İşlem</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
