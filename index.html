@@ -91,12 +91,16 @@
             <div class="nav-item" data-section="section-rapor" onclick="navigateTo('section-rapor')">
                 <span class="nav-icon">📈</span><span class="nav-label">Rapor</span>
             </div>
+            <div class="nav-item" data-section="section-admin" onclick="navigateTo('section-admin')">
+                <span class="nav-icon">👑</span><span class="nav-label">Yetkililer</span>
+            </div>
         </nav>
 
         <div class="sidebar-bottom">
             <div class="data-actions">
                 <button class="btn btn-outline btn-sm btn-block" onclick="exportData()">📥 Veri Yedekle</button>
                 <button class="btn btn-outline btn-sm btn-block" onclick="importData()">📤 Geri Yükle</button>
+                <button class="btn btn-danger btn-sm btn-block" style="margin-top: 8px;" onclick="logout()">🚪 Çıkış Yap</button>
             </div>
         </div>
     </aside>

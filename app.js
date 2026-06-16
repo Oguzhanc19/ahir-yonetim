@@ -20,6 +20,9 @@ function loadData() {
       if (!appData.vetExpenses) appData.vetExpenses = [];
       if (!appData.kurbanlikCikti) appData.kurbanlikCikti = [];
       if (!appData.todos) appData.todos = [];
+      if (!appData.users) {
+        appData.users = JSON.parse(JSON.stringify(DEFAULT_DATA.users));
+      }
     } else {
       appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
       saveData();
@@ -112,8 +115,19 @@ function refreshSection(sectionId) {
     case 'section-musteri-listesi':
       renderCustomerTable();
       break;
+    case 'section-admin':
+      renderAdminTable();
+      break;
     default:
       break;
+  }
+}
+
+function logout() {
+  if(confirm("Sistemden çıkış yapmak istediğinize emin misiniz?")) {
+    localStorage.removeItem('ahirSessionActive');
+    localStorage.removeItem('ahirCurrentUser');
+    window.location.reload();
   }
 }
 
@@ -1448,12 +1462,6 @@ function installPWA() {
 // ==========================================
 // KULLANICI GİRİŞ (LOGIN)
 // ==========================================
-const ALLOWED_USERS = [
-  { user: "ali gül", pass: "5555" },
-  { user: "mert gül", pass: "5555" },
-  { user: "oğuzhan gül", pass: "5555" }
-];
-
 function checkLogin() {
   const session = localStorage.getItem('ahirSessionActive');
   if (session === 'true') {
@@ -1472,10 +1480,16 @@ function attemptLogin() {
   const pass = (document.getElementById('login-password').value || '').trim();
   const errorEl = document.getElementById('login-error');
 
-  const isValid = ALLOWED_USERS.some(function(u) { return u.user === user && u.pass === pass; });
+  // Load data to check users if appData is empty
+  if (!appData.users) {
+      loadData();
+  }
+
+  const isValid = appData.users.some(function(u) { return u.user === user && u.pass === pass; });
 
   if (isValid) {
     localStorage.setItem('ahirSessionActive', 'true');
+    localStorage.setItem('ahirCurrentUser', user);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
     errorEl.style.display = 'none';
@@ -2000,6 +2014,75 @@ function deleteSelectedCustomers() {
   if (chkAll) chkAll.checked = false;
 
   showToast(countSales + ' adet satış kaydı silindi ve müşteriler kaldırıldı.', 'success');
+}
+
+// ==========================================
+// ADMİN PANELİ (YETKİLİLER)
+// ==========================================
+function renderAdminTable() {
+  var tbody = document.querySelector('#table-admin-listesi tbody');
+  if (!tbody) return;
+
+  var currentUser = localStorage.getItem('ahirCurrentUser') || '';
+  var html = '';
+
+  (appData.users || []).forEach(function(u, index) {
+    var isMe = (u.user === currentUser);
+    html += '<tr>';
+    html += '<td data-label="Kullanıcı Adı" class="font-bold">' + escapeHtml(u.user) + (isMe ? ' <span style="color:var(--color-primary-light); font-size:0.8em;">(Siz)</span>' : '') + '</td>';
+    html += '<td data-label="Şifre">' + (isMe ? escapeHtml(u.pass) : '••••••••') + '</td>';
+    html += '<td data-label="İşlem">';
+    if (isMe) {
+      html += '<button class="btn btn-sm btn-outline" onclick="editAdminCredentials(' + index + ')">✏️ Bilgilerimi Düzenle</button>';
+    } else {
+      html += '<span style="color:var(--color-text-muted);">🔒 Düzenlenemez</span>';
+    }
+    html += '</td>';
+    html += '</tr>';
+  });
+
+  tbody.innerHTML = html;
+}
+
+function editAdminCredentials(index) {
+  var userObj = appData.users[index];
+  if (!userObj) return;
+
+  var newUsername = prompt("Yeni Kullanıcı Adı belirleyin (Küçük/Büyük harf fark etmez):", userObj.user);
+  if (newUsername === null) return;
+  newUsername = newUsername.trim().toLowerCase();
+  
+  if (newUsername === '') {
+    showToast("Kullanıcı adı boş olamaz!", "error");
+    return;
+  }
+
+  // Check if someone else already uses this name
+  var existing = appData.users.find(function(u, i) { return i !== index && u.user === newUsername; });
+  if (existing) {
+    showToast("Bu kullanıcı adı başkası tarafından kullanılıyor!", "error");
+    return;
+  }
+
+  var newPassword = prompt("Yeni Şifre belirleyin:", userObj.pass);
+  if (newPassword === null) return;
+  newPassword = newPassword.trim();
+
+  if (newPassword === '') {
+    showToast("Şifre boş olamaz!", "error");
+    return;
+  }
+
+  userObj.user = newUsername;
+  userObj.pass = newPassword;
+  
+  saveData();
+  
+  // Update local storage so session still works
+  localStorage.setItem('ahirCurrentUser', newUsername);
+  
+  renderAdminTable();
+  showToast("Giriş bilgileriniz başarıyla güncellendi!", "success");
 }
 
 
