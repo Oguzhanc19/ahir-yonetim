@@ -839,11 +839,11 @@ function renderKurbanlikCiktiTable() {
     g.hissedarlar.forEach(function(h) {
       var kalan = h.satisFiyati - h.alinanUcret;
       html += '<tr>';
-      html += '<td>' + escapeHtml(h.ad) + '</td>';
-      html += '<td>' + h.pay + '</td>';
-      html += '<td>' + formatMoney(h.satisFiyati) + '</td>';
-      html += '<td>' + formatMoney(h.alinanUcret) + '</td>';
-      html += '<td class="' + (kalan > 0 ? 'text-danger' : 'text-success') + '">' + formatMoney(kalan) + '</td>';
+      html += '<td data-label="Müşteri">' + escapeHtml(h.ad) + '</td>';
+      html += '<td data-label="Pay">' + h.pay + '</td>';
+      html += '<td data-label="Satış F.">' + formatMoney(h.satisFiyati) + '</td>';
+      html += '<td data-label="Alınan">' + formatMoney(h.alinanUcret) + '</td>';
+      html += '<td data-label="Kalan" class="' + (kalan > 0 ? 'text-danger' : 'text-success') + '">' + formatMoney(kalan) + '</td>';
       html += '</tr>';
     });
     html += '</tbody></table></div>';
