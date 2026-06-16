@@ -16,7 +16,27 @@
 </head>
 <body>
 
-<div class="app-container">
+    <!-- ========== GİRİŞ EKRANI ========== -->
+    <div id="login-screen" class="login-overlay" style="display: none;">
+        <div class="login-card">
+            <div style="text-align:center; font-size: 3em; margin-bottom: 10px;">🐄</div>
+            <h2 style="text-align: center; margin-bottom: 20px;">GÜL BESİ LTD ŞT</h2>
+            <div class="form-group">
+                <label class="form-label">Kullanıcı Adı</label>
+                <input type="text" id="login-username" class="form-input" placeholder="İsminizi girin..." autocomplete="off">
+            </div>
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label">Şifre</label>
+                <input type="password" id="login-password" class="form-input" placeholder="Şifrenizi girin..." autocomplete="off" onkeypress="if(event.key === 'Enter') attemptLogin()">
+            </div>
+            <div class="form-group">
+                <button class="btn btn-success btn-block" style="padding: 12px; font-size: 1.1em;" onclick="attemptLogin()">Sisteme Giriş Yap</button>
+            </div>
+            <div id="login-error" class="text-danger font-bold" style="display:none; text-align:center; margin-top: 15px;">Hatalı kullanıcı adı veya şifre!</div>
+        </div>
+    </div>
+
+<div class="app-container" id="main-app" style="display: none;">
 
     <!-- ========== SIDEBAR ========== -->
     <aside id="sidebar" class="sidebar">
@@ -448,10 +468,15 @@
                 <input type="text" id="filter-musteri-listesi" class="form-input" placeholder="Müşteri adına göre ara..." oninput="renderCustomerTable()">
             </div>
 
+            <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
+                <button class="btn btn-danger" onclick="deleteSelectedCustomers()">🗑️ Seçilenleri Sil</button>
+            </div>
+
             <div class="table-container">
                 <table class="data-table" id="table-musteri-listesi">
                     <thead>
                         <tr>
+                            <th style="width: 40px;"><input type="checkbox" onchange="toggleAllCheckboxes(this, '#table-musteri-listesi')"></th>
                             <th>Müşteri Adı</th>
                             <th>Satın Aldığı Hayvan/Hisse</th>
                             <th>Toplam Alışveriş</th>

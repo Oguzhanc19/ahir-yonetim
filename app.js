@@ -1445,6 +1445,46 @@ function installPWA() {
   }
 }
 
+// ==========================================
+// KULLANICI GİRİŞ (LOGIN)
+// ==========================================
+const ALLOWED_USERS = [
+  { user: "ali gül", pass: "5555" },
+  { user: "mert gül", pass: "5555" },
+  { user: "oğuzhan gül", pass: "5555" }
+];
+
+function checkLogin() {
+  const session = localStorage.getItem('ahirSessionActive');
+  if (session === 'true') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'flex';
+    return true;
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+    return false;
+  }
+}
+
+function attemptLogin() {
+  const user = (document.getElementById('login-username').value || '').trim().toLowerCase();
+  const pass = (document.getElementById('login-password').value || '').trim();
+  const errorEl = document.getElementById('login-error');
+
+  const isValid = ALLOWED_USERS.some(function(u) { return u.user === user && u.pass === pass; });
+
+  if (isValid) {
+    localStorage.setItem('ahirSessionActive', 'true');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'flex';
+    errorEl.style.display = 'none';
+    initializeApp(); // Start app after login
+  } else {
+    errorEl.style.display = 'block';
+  }
+}
+
 function dismissInstallBanner() {
   var banner = document.getElementById('pwa-install-banner');
   if (banner) banner.classList.remove('show');
@@ -1467,6 +1507,15 @@ if ('serviceWorker' in navigator) {
 // EVENT LISTENERS & INIT
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
+  // Login kontrolü
+  if (!checkLogin()) {
+    return; // Stop initialization until login
+  }
+
+  initializeApp();
+});
+
+function initializeApp() {
   // Veriyi yükle
   loadData();
 
@@ -1567,6 +1616,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   console.log('Ali Ahır - Ahır Yönetim Sistemi başlatıldı. Toplam hayvan: ' + appData.animals.length);
+}
 });
 
 // ==========================================
