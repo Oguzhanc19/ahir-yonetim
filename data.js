@@ -4,10 +4,7 @@
 // ==========================================
 const DEFAULT_DATA = {
   users: [
-    { user: "ali gül", pass: "5555" },
-    { user: "mert gül", pass: "5555" },
-    { user: "oğuzhan gül", pass: "5555" },
-    { user: "admin", pass: "admin" }
+    { user: "ali gül", pass: "5555" }
   ],
   animals: [
     { kupeNo: '55001', irk: 'SİMENTAL', padok: 'PADOK 1', cinsiyet: 'ERKEK', alisTarihi: '2025-11-01', dogumTarihi: '', kilo: 100, durum: 'KURBANLIK', satisDurumu: 'STOKTA', alisFiyati: 130000, aciklama: '' },
