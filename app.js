@@ -1617,7 +1617,6 @@ function initializeApp() {
 
   console.log('Ali Ahır - Ahır Yönetim Sistemi başlatıldı. Toplam hayvan: ' + appData.animals.length);
 }
-});
 
 // ==========================================
 // YENİ ÖZELLİKLER (Toplu Sil, Hisse Sil, Görevler, Uyarılar)

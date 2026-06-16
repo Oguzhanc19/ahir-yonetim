@@ -896,6 +896,17 @@ textarea.form-input {
     backdrop-filter: blur(4px);
 }
 
+.login-card {
+    background: var(--color-surface);
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid var(--color-border);
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
 .modal-content {
     position: relative;
     background: var(--color-card);
