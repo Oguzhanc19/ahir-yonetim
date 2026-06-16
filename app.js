@@ -456,6 +456,7 @@ function searchAnimal() {
   resultDiv.classList.remove('hidden');
 
   if (animal) {
+    var salesHtml = getSalesHtml(kupeNo);
     resultDiv.innerHTML =
       '<div class="card">' +
         '<div class="card-header">🐄 Hayvan Bilgileri - ' + escapeHtml(animal.kupeNo) + '</div>' +
@@ -471,9 +472,43 @@ function searchAnimal() {
           '<div class="result-item"><span class="result-label">Satış Durumu</span><span class="result-value">' + getBadge(animal.satisDurumu) + '</span></div>' +
           '<div class="result-item"><span class="result-label">Açıklama</span><span class="result-value">' + (escapeHtml(animal.aciklama) || '-') + '</span></div>' +
         '</div>' +
+        salesHtml +
       '</div>';
   } else {
     resultDiv.innerHTML = '<div class="card"><p class="text-danger">❌ Küpe numarası bulunamadı!</p></div>';
+  }
+}
+
+function getSalesHtml(kupeNo) {
+  var sales = appData.sales.filter(function(s) { return s.kupeNo === kupeNo; });
+  if (sales.length === 0) return '';
+
+  var isHisseli = sales.some(function(s) { return s.satisTuru && s.satisTuru.includes('Hisse'); });
+  if (sales.length > 1 || isHisseli) {
+    var html = '<div class="mt-3"><h3 class="card-header" style="font-size:1em; margin-bottom:8px;">Hissedar Listesi</h3>';
+    html += '<div style="overflow-x:auto;"><table class="data-table" style="font-size: 0.85em;">';
+    html += '<thead><tr><th>Müşteri</th><th>Pay</th><th>Satış F.</th><th>Alınan</th><th>Kalan</th></tr></thead><tbody>';
+    sales.forEach(function(s) {
+      var kalan = s.satisFiyati - s.alinanToplam;
+      html += '<tr>';
+      html += '<td data-label="Müşteri">' + escapeHtml(s.musteriAdi) + '</td>';
+      html += '<td data-label="Pay">' + escapeHtml(s.satisTuru) + '</td>';
+      html += '<td data-label="Satış F.">' + formatMoney(s.satisFiyati) + '</td>';
+      html += '<td data-label="Alınan">' + formatMoney(s.alinanToplam) + '</td>';
+      html += '<td data-label="Kalan">' + formatMoney(kalan) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+    return html;
+  } else {
+    var s = sales[0];
+    var html = '<div class="mt-3"><h3 class="card-header" style="font-size:1em; margin-bottom:8px;">Satış Detayı</h3>';
+    html += '<div class="result-grid">';
+    html += '<div class="result-item"><span class="result-label">Müşteri</span><span class="result-value">' + escapeHtml(s.musteriAdi) + '</span></div>';
+    html += '<div class="result-item"><span class="result-label">Satış Fiyatı</span><span class="result-value">' + formatMoney(s.satisFiyati) + '</span></div>';
+    html += '<div class="result-item"><span class="result-label">Alınan Ücret</span><span class="result-value">' + formatMoney(s.alinanToplam) + '</span></div>';
+    html += '</div></div>';
+    return html;
   }
 }
 
@@ -496,23 +531,22 @@ function searchKurbanlik() {
 
   resultDiv.classList.remove('hidden');
 
-  if (sale || animal) {
-    var data = sale || animal;
-    var kgFiyati = sale && sale.tahminiKilo > 0 ? sale.satisFiyati / sale.tahminiKilo : 0;
+  if (animal || sale) {
+    var data = animal || sale;
+    var salesHtml = getSalesHtml(kupeNo);
 
     resultDiv.innerHTML =
       '<div class="card">' +
         '<div class="card-header">🔎 Kurbanlık Bilgileri - ' + escapeHtml(kupeNo) + '</div>' +
         '<div class="result-grid">' +
           '<div class="result-item"><span class="result-label">Küpe No</span><span class="result-value">' + escapeHtml(kupeNo) + '</span></div>' +
-          '<div class="result-item"><span class="result-label">Müşteri Adı</span><span class="result-value">' + (sale ? escapeHtml(sale.musteriAdi) : '-') + '</span></div>' +
           '<div class="result-item"><span class="result-label">Cinsiyet</span><span class="result-value">' + escapeHtml(data.cinsiyet || '-') + '</span></div>' +
           '<div class="result-item"><span class="result-label">Irk</span><span class="result-value">' + escapeHtml(data.irk || '-') + '</span></div>' +
           '<div class="result-item"><span class="result-label">Satış Durumu</span><span class="result-value">' + (animal ? getBadge(animal.satisDurumu) : '-') + '</span></div>' +
           '<div class="result-item"><span class="result-label">Padok</span><span class="result-value">' + escapeHtml(data.padok || '-') + '</span></div>' +
-          '<div class="result-item"><span class="result-label">Kilo</span><span class="result-value">' + ((sale ? sale.tahminiKilo : (animal ? animal.kilo : 0)) || '-') + ' kg</span></div>' +
-          '<div class="result-item"><span class="result-label">Satış KG Fiyatı</span><span class="result-value">' + (kgFiyati ? formatMoney(kgFiyati) : '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Kilo</span><span class="result-value">' + ((animal ? animal.kilo : 0) || '-') + ' kg</span></div>' +
         '</div>' +
+        salesHtml +
       '</div>';
   } else {
     resultDiv.innerHTML = '<div class="card"><p class="text-danger">❌ Kurbanlık bulunamadı!</p></div>';
@@ -925,51 +959,84 @@ function updateDashboard() {
 function updateReport() {
   updateDashboard(); // Rapor aynı istatistikleri kullanır
 
+  var dashboardData = getDashboardData();
+
+  setText('rapor-toplam-hayvan', dashboardData.animals.length);
+  setText('rapor-aktif', dashboardData.aktif);
+  setText('rapor-pasif', dashboardData.pasif);
+  setText('rapor-kurbanlik', dashboardData.kurbanlik);
+  setText('rapor-besi', dashboardData.besi);
+  setText('rapor-damizlik', dashboardData.damizlik);
+  setText('rapor-toplam-alis', formatMoney(dashboardData.toplamAlis));
+  setText('rapor-toplam-satis', formatMoney(dashboardData.toplamSatis));
+  setText('rapor-toplam-yem', formatMoney(dashboardData.toplamYem));
+  setText('rapor-toplam-vet', formatMoney(dashboardData.toplamVet));
+  setText('rapor-kar-zarar', formatMoney(dashboardData.karZarar));
+  
+  var karYuzdesi = 0;
+  if (dashboardData.toplamMaliyet > 0) {
+    karYuzdesi = (dashboardData.karZarar / dashboardData.toplamMaliyet) * 100;
+  }
+  setText('rapor-kar-yuzde', '%' + karYuzdesi.toFixed(1));
+
+  var karEl = document.getElementById('rapor-kar-zarar');
+  if (karEl) {
+    karEl.style.color = dashboardData.karZarar >= 0 ? '#10b981' : '#ef4444';
+  }
+  var yuzdeEl = document.getElementById('rapor-kar-yuzde');
+  if (yuzdeEl) {
+    yuzdeEl.style.color = dashboardData.karZarar >= 0 ? '#10b981' : '#ef4444';
+  }
+
   // Ek rapor detayları - Padok bazlı dağılım
   var padokStats = {};
   appData.animals.forEach(function(a) {
-    if (!padokStats[a.padok]) {
-      padokStats[a.padok] = { toplam: 0, stokta: 0, satilan: 0 };
+    var padokName = a.padok || 'Belirtilmemiş';
+    if (!padokStats[padokName]) {
+      padokStats[padokName] = { toplam: 0, stokta: 0, satilan: 0 };
     }
-    padokStats[a.padok].toplam++;
+    padokStats[padokName].toplam++;
     if (a.satisDurumu === 'STOKTA') {
-      padokStats[a.padok].stokta++;
+      padokStats[padokName].stokta++;
     } else {
-      padokStats[a.padok].satilan++;
+      padokStats[padokName].satilan++;
     }
   });
 
-  var padokContainer = document.getElementById('padok-rapor');
+  var padokContainer = document.getElementById('rapor-padok-grid');
   if (padokContainer) {
     var padokHtml = '';
     Object.keys(padokStats).sort().forEach(function(padok) {
       var stat = padokStats[padok];
       padokHtml += '<div class="stat-card">' +
-        '<div class="stat-label">' + escapeHtml(padok) + '</div>' +
+        '<div class="stat-icon">🏠</div>' +
         '<div class="stat-value">' + stat.toplam + '</div>' +
-        '<div class="stat-sub">Stokta: ' + stat.stokta + ' | Satılan: ' + stat.satilan + '</div>' +
+        '<div class="stat-label">' + escapeHtml(padok) + '</div>' +
+        '<div class="stat-sub" style="font-size:0.75em; color:var(--color-text-secondary); margin-top:4px;">Stokta: ' + stat.stokta + ' | Satılan: ' + stat.satilan + '</div>' +
       '</div>';
     });
-    padokContainer.innerHTML = padokHtml;
+    padokContainer.innerHTML = padokHtml || '<p>Kayıt bulunamadı.</p>';
   }
 
   // Irk bazlı dağılım
   var irkStats = {};
   appData.animals.forEach(function(a) {
-    if (!irkStats[a.irk]) irkStats[a.irk] = 0;
-    irkStats[a.irk]++;
+    var irkName = a.irk || 'Belirtilmemiş';
+    if (!irkStats[irkName]) irkStats[irkName] = 0;
+    irkStats[irkName]++;
   });
 
-  var irkContainer = document.getElementById('irk-rapor');
+  var irkContainer = document.getElementById('rapor-irk-grid');
   if (irkContainer) {
     var irkHtml = '';
     Object.keys(irkStats).sort().forEach(function(irk) {
       irkHtml += '<div class="stat-card">' +
-        '<div class="stat-label">' + escapeHtml(irk) + '</div>' +
+        '<div class="stat-icon">🐄</div>' +
         '<div class="stat-value">' + irkStats[irk] + '</div>' +
+        '<div class="stat-label">' + escapeHtml(irk) + '</div>' +
       '</div>';
     });
-    irkContainer.innerHTML = irkHtml;
+    irkContainer.innerHTML = irkHtml || '<p>Kayıt bulunamadı.</p>';
   }
 }
 
@@ -1576,7 +1643,7 @@ function renderAlerts() {
   var alerts = [];
 
   var kurbanliklar = appData.animals.filter(function(a) { return a.durum === 'KURBANLIK'; });
-  var kurbanlikBosHisseCount = 0;
+  var kurbanlikBosHisseler = [];
 
   var sales = appData.sales || [];
   kurbanliklar.forEach(function(a) {
@@ -1586,25 +1653,42 @@ function renderAlerts() {
     satilanHisse += kc.length;
 
     if (satilanHisse > 0 && satilanHisse < 7) {
-      kurbanlikBosHisseCount++;
+      kurbanlikBosHisseler.push(a.kupeNo + ' (' + (7 - satilanHisse) + ' boş hisse)');
     }
   });
 
-  if (kurbanlikBosHisseCount > 0) {
-    alerts.push({ icon: '⚠️', text: kurbanlikBosHisseCount + ' adet kurbanlıkta satılmamış (boş) hisseler bulunuyor.', color: 'var(--color-warning)' });
+  if (kurbanlikBosHisseler.length > 0) {
+    var detay = kurbanlikBosHisseler.join('<br>');
+    alerts.push({ 
+      icon: '⚠️', 
+      text: '<details><summary style="cursor:pointer; font-weight:bold;">' + kurbanlikBosHisseler.length + ' adet kurbanlıkta satılmamış (boş) hisseler bulunuyor.</summary><div style="margin-top:8px; font-size:0.9em; opacity:0.9;">' + detay + '</div></details>', 
+      color: 'var(--color-warning)' 
+    });
   }
 
-  var eksikTahsilat = 0;
+  var eksikTahsilatListesi = [];
   sales.forEach(function(s) {
-    if (s.satisFiyati > s.alinanToplam) eksikTahsilat++;
+    if (s.satisFiyati > s.alinanToplam) {
+      eksikTahsilatListesi.push(escapeHtml(s.musteriAdi) + ' (' + escapeHtml(s.kupeNo) + ') - Kalan: ' + formatMoney(s.satisFiyati - s.alinanToplam));
+    }
   });
-  if (eksikTahsilat > 0) {
-    alerts.push({ icon: '💰', text: eksikTahsilat + ' adet satışın tahsilatı henüz tamamlanmadı.', color: 'var(--color-danger)' });
+  if (eksikTahsilatListesi.length > 0) {
+    var detay = eksikTahsilatListesi.join('<br>');
+    alerts.push({ 
+      icon: '💰', 
+      text: '<details><summary style="cursor:pointer; font-weight:bold;">' + eksikTahsilatListesi.length + ' adet satışın tahsilatı henüz tamamlanmadı.</summary><div style="margin-top:8px; font-size:0.9em; opacity:0.9;">' + detay + '</div></details>', 
+      color: 'var(--color-danger)' 
+    });
   }
 
-  var stoktaBesi = appData.animals.filter(function(a) { return a.durum === 'BESİ' && a.satisDurumu === 'STOKTA'; }).length;
-  if (stoktaBesi > 0) {
-    alerts.push({ icon: 'ℹ️', text: 'Stokta satılmayı bekleyen ' + stoktaBesi + ' adet besi hayvanı var.', color: 'var(--color-info)' });
+  var stoktaBesi = appData.animals.filter(function(a) { return a.durum === 'BESİ' && a.satisDurumu === 'STOKTA'; });
+  if (stoktaBesi.length > 0) {
+    var detay = stoktaBesi.map(function(a) { return a.kupeNo; }).join(', ');
+    alerts.push({ 
+      icon: 'ℹ️', 
+      text: '<details><summary style="cursor:pointer; font-weight:bold;">Stokta satılmayı bekleyen ' + stoktaBesi.length + ' adet besi hayvanı var.</summary><div style="margin-top:8px; font-size:0.9em; opacity:0.9;">Küpe No: ' + escapeHtml(detay) + '</div></details>', 
+      color: 'var(--color-info)' 
+    });
   }
 
   if (alerts.length === 0) {
@@ -1615,8 +1699,8 @@ function renderAlerts() {
   var html = '';
   alerts.forEach(function(a) {
     html += '<li style="display:flex; gap:8px; padding: 10px 0; border-bottom: 1px solid var(--color-border); align-items:flex-start;">';
-    html += '<span>' + a.icon + '</span>';
-    html += '<span style="color:' + a.color + '; font-size:0.9em; line-height:1.4;">' + a.text + '</span>';
+    html += '<span style="margin-top:2px;">' + a.icon + '</span>';
+    html += '<div style="color:' + a.color + '; font-size:0.9em; line-height:1.4; width:100%;">' + a.text + '</div>';
     html += '</li>';
   });
 

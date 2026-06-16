@@ -1196,6 +1196,10 @@ textarea.form-input {
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
     .sidebar {
         transform: translateX(-100%);
     }
