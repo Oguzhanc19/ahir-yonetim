@@ -270,8 +270,23 @@
         <div id="section-hayvan-listesi" class="section">
             <h1 class="section-title"><span>📋</span> Hayvan Listesi</h1>
 
+            <div class="stats-grid" id="hayvan-listesi-ozet">
+                <div class="stat-card">
+                    <div class="stat-value" id="hl-toplam-hayvan">0</div>
+                    <div class="stat-label">Listelenen Hayvan</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="hl-toplam-kilo">0 kg</div>
+                    <div class="stat-label">Toplam Kilo</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="hl-toplam-maliyet">0 ₺</div>
+                    <div class="stat-label">Toplam Alış Maliyeti</div>
+                </div>
+            </div>
+
             <div class="filter-bar">
-                <input type="text" id="filter-hayvan-listesi" class="form-input" placeholder="🔍 Küpe no, ırk veya padok ile filtrele..." oninput="filterAnimalList()">
+                <input type="text" id="filter-hayvan-listesi" class="form-input" placeholder="🔍 Küpe no, ırk veya padok ile filtrele..." oninput="renderAnimalTable()">
             </div>
 
             <div class="table-container">
@@ -355,6 +370,25 @@
         <!-- ===== SATIŞ GEÇMİŞİ (KURBANLIK SATISI) ===== -->
         <div id="section-kurbanlik-satisi" class="section">
             <h1 class="section-title"><span>📑</span> Satış Geçmişi</h1>
+
+            <div class="stats-grid" id="satis-gecmisi-ozet">
+                <div class="stat-card">
+                    <div class="stat-value" id="sg-toplam-satis">0 ₺</div>
+                    <div class="stat-label">Toplam Satış Tutarı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sg-alinan">0 ₺</div>
+                    <div class="stat-label">Alınan Toplam</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sg-kalan">0 ₺</div>
+                    <div class="stat-label">Kalan Alacak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-success" id="sg-kar">0 ₺</div>
+                    <div class="stat-label">Elde Edilen Kâr</div>
+                </div>
+            </div>
 
             <div class="table-container">
                 <table class="data-table" id="table-kurbanlik-satisi">
@@ -583,24 +617,10 @@
 
         <!-- ===== KURBANLIK ÇIKTI ===== -->
         <div id="section-kurbanlik-cikti" class="section">
-            <h1 class="section-title"><span>📄</span> Kurbanlık Çıktı (Hisseli Satış)</h1>
+            <h1 class="section-title"><span>📄</span> Kurbanlık Çıktı (Hisseli Satış Dağılımı)</h1>
 
-            <div class="table-container">
-                <table class="data-table" id="table-kurbanlik-cikti">
-                    <thead>
-                        <tr>
-                            <th>Küpe No</th>
-                            <th>Müşteri Adı</th>
-                            <th>Irk</th>
-                            <th>Padok No</th>
-                            <th>Satış Fiyatı</th>
-                            <th>Alınan Ücret</th>
-                            <th>Kalan Ücret</th>
-                            <th>Kurbanda Alınan Ücret</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div id="kurbanlik-cikti-container" class="result-grid">
+                <!-- Populated by JS -->
             </div>
         </div>
 
@@ -721,6 +741,97 @@
                     <div class="stat-value" id="rapor-sagim">0</div>
                     <div class="stat-label">Sağım Hane</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ===== EDIT MODAL ===== -->
+        <div id="edit-modal" class="modal">
+            <div class="modal-overlay" onclick="closeEditModal()"></div>
+            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+                <div class="card-header">✏️ Hayvan Düzenle</div>
+                <form id="form-edit-hayvan" onsubmit="return false;">
+                    <input type="hidden" id="edit-index">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-kupe">Küpe No</label>
+                            <input type="text" id="edit-kupe" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-irk">Irk</label>
+                            <select id="edit-irk" class="form-select">
+                                <option value="SİMENTAL">SİMENTAL</option>
+                                <option value="MONTOFON">MONTOFON</option>
+                                <option value="SİMENTAL MELEZİ">SİMENTAL MELEZİ</option>
+                                <option value="BELÇİKA MAVİ">BELÇİKA MAVİ</option>
+                                <option value="JERSEY">JERSEY</option>
+                                <option value="JERSEY MELEZİ">JERSEY MELEZİ</option>
+                                <option value="MONTOFON MELEZİ">MONTOFON MELEZİ</option>
+                                <option value="YERLİ MELEZ">YERLİ MELEZ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-padok">Padok</label>
+                            <select id="edit-padok" class="form-select">
+                                <option value="PADOK 1">PADOK 1</option>
+                                <option value="PADOK 2">PADOK 2</option>
+                                <option value="PADOK 3">PADOK 3</option>
+                                <option value="PADOK 4">PADOK 4</option>
+                                <option value="PADOK 5">PADOK 5</option>
+                                <option value="PADOK 6">PADOK 6</option>
+                                <option value="TEDAVİ">TEDAVİ</option>
+                                <option value="SAĞIM HANE">SAĞIM HANE</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-cinsiyet">Cinsiyet</label>
+                            <select id="edit-cinsiyet" class="form-select">
+                                <option value="ERKEK">ERKEK</option>
+                                <option value="DİŞİ">DİŞİ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-tarih">Alış Tarihi</label>
+                            <input type="date" id="edit-tarih" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-dogum">Doğum Tarihi</label>
+                            <input type="date" id="edit-dogum" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-kilo">Kilo</label>
+                            <input type="number" id="edit-kilo" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-fiyat">Alış Fiyatı (₺)</label>
+                            <input type="number" id="edit-fiyat" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-durum">Durum</label>
+                            <select id="edit-durum" class="form-select">
+                                <option value="KURBANLIK">KURBANLIK</option>
+                                <option value="BESİ">BESİ</option>
+                                <option value="DAMIZLIK">DAMIZLIK</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-satis-durumu">Satış Durumu</label>
+                            <select id="edit-satis-durumu" class="form-select">
+                                <option value="STOKTA">STOKTA</option>
+                                <option value="SATILDI">SATILDI</option>
+                                <option value="Hisseli Satış">Hisseli Satış</option>
+                                <option value="ÖLDÜ">ÖLDÜ</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label class="form-label" for="edit-aciklama">Açıklama</label>
+                            <textarea id="edit-aciklama" class="form-input"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3" style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">İptal</button>
+                        <button type="button" class="btn btn-primary" onclick="saveAnimalEdit()">💾 Kaydet</button>
+                    </div>
+                </form>
             </div>
         </div>
 
