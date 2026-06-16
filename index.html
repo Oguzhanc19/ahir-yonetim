@@ -22,7 +22,7 @@
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-logo">
             <span class="logo-icon">🐄</span>
-            <span class="logo-text">KAPAKLI MERT BESİ</span>
+            <span class="logo-text">GÜL BESİ LTD ŞT</span>
         </div>
 
         <nav class="sidebar-nav">
@@ -158,33 +158,28 @@
                 </div>
             </div>
 
-            <h2 class="section-title" style="font-size:1.3em;">⚡ Hızlı İşlemler</h2>
-            <div class="quick-actions">
-                <div class="quick-action-btn" onclick="navigateTo('section-hayvan-ekle')">
-                    <div class="action-icon">➕</div>
-                    <div class="action-label">Hayvan Ekle</div>
+            <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
+                <!-- Görev Yöneticisi -->
+                <div class="card" style="margin-bottom: 0;">
+                    <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px;">📝 Günlük Görevler / Notlar</h3>
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <input type="text" id="todo-input" class="form-input" placeholder="Yeni görev ekle..." style="flex: 1;" onkeypress="if(event.key==='Enter') addTodo()">
+                        <button class="btn btn-primary" onclick="addTodo()">Ekle</button>
+                    </div>
+                    <ul id="todo-list" style="list-style:none; padding:0; margin:0; max-height: 250px; overflow-y: auto;">
+                        <!-- JS ile doldurulacak -->
+                    </ul>
                 </div>
-                <div class="quick-action-btn" onclick="navigateTo('section-hayvan-listesi')">
-                    <div class="action-icon">📋</div>
-                    <div class="action-label">Hayvan Listesi</div>
-                </div>
-                <div class="quick-action-btn" onclick="navigateTo('section-satis-ekle')">
-                    <div class="action-icon">💰</div>
-                    <div class="action-label">Satış Yap</div>
-                </div>
-                <div class="quick-action-btn" onclick="navigateTo('section-yem-ekle')">
-                    <div class="action-icon">🌾</div>
-                    <div class="action-label">Yem Ekle</div>
-                </div>
-                <div class="quick-action-btn" onclick="navigateTo('section-veteriner-ekle')">
-                    <div class="action-icon">💉</div>
-                    <div class="action-label">Veteriner</div>
-                </div>
-                <div class="quick-action-btn" onclick="navigateTo('section-rapor')">
-                    <div class="action-icon">📈</div>
-                    <div class="action-label">Rapor</div>
+                <!-- Sistem Uyarıları -->
+                <div class="card" style="margin-bottom: 0;">
+                    <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px;">⚠️ Sistem Uyarıları</h3>
+                    <ul id="alert-list" style="list-style:none; padding:0; margin:0; max-height: 250px; overflow-y: auto;">
+                        <!-- JS ile doldurulacak -->
+                    </ul>
                 </div>
             </div>
+
+
         </div>
 
         <!-- ===== HAYVAN EKLE ===== -->
@@ -285,14 +280,16 @@
                 </div>
             </div>
 
-            <div class="filter-bar">
-                <input type="text" id="filter-hayvan-listesi" class="form-input" placeholder="🔍 Küpe no, ırk veya padok ile filtrele..." oninput="renderAnimalTable()">
+            <div class="filter-bar" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="filter-hayvan-listesi" class="form-input" placeholder="🔍 Küpe no, ırk veya padok ile filtrele..." oninput="renderAnimalTable()" style="flex:1; min-width: 250px;">
+                <button class="btn btn-danger" onclick="deleteSelected('animals')">🗑️ Seçilenleri Sil</button>
             </div>
 
             <div class="table-container">
                 <table class="data-table" id="table-hayvan-listesi">
                     <thead>
                         <tr>
+                            <th style="width: 40px;"><input type="checkbox" onchange="toggleAllCheckboxes(this, '#table-hayvan-listesi')"></th>
                             <th>Küpe No</th>
                             <th>Irk</th>
                             <th>Padok</th>
@@ -390,10 +387,15 @@
                 </div>
             </div>
 
+            <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
+                <button class="btn btn-danger" onclick="deleteSelected('sales')">🗑️ Seçilenleri Sil</button>
+            </div>
+
             <div class="table-container">
                 <table class="data-table" id="table-kurbanlik-satisi">
                     <thead>
                         <tr>
+                            <th style="width: 40px;"><input type="checkbox" onchange="toggleAllCheckboxes(this, '#table-kurbanlik-satisi')"></th>
                             <th>Küpe No</th>
                             <th>Müşteri Adı</th>
                             <th>Irk</th>
@@ -463,10 +465,15 @@
                 <div class="summary-value" id="yem-genel-toplam">0 ₺</div>
             </div>
 
+            <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
+                <button class="btn btn-danger" onclick="deleteSelected('feeds')">🗑️ Seçilenleri Sil</button>
+            </div>
+
             <div class="table-container">
                 <table class="data-table" id="table-yem-veri">
                     <thead>
                         <tr>
+                            <th style="width: 40px;"><input type="checkbox" onchange="toggleAllCheckboxes(this, '#table-yem-veri')"></th>
                             <th>Yem Markası</th>
                             <th>Yem Türü</th>
                             <th>Alım Tarihi</th>
@@ -528,10 +535,15 @@
                 <div class="summary-value" id="vet-genel-toplam">0 ₺</div>
             </div>
 
+            <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
+                <button class="btn btn-danger" onclick="deleteSelected('vets')">🗑️ Seçilenleri Sil</button>
+            </div>
+
             <div class="table-container">
                 <table class="data-table" id="table-vet-veri">
                     <thead>
                         <tr>
+                            <th style="width: 40px;"><input type="checkbox" onchange="toggleAllCheckboxes(this, '#table-vet-veri')"></th>
                             <th>Veteriner Adı</th>
                             <th>Alınan İlaç</th>
                             <th>Adeti</th>
