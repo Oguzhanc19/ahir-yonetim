@@ -1,0 +1,1221 @@
+// ==========================================
+// ALİ AHIR - AHIR YÖNETİM SİSTEMİ
+// Tam Uygulama Mantığı (app.js)
+// ==========================================
+
+// ==========================================
+// STATE MANAGEMENT
+// ==========================================
+let appData = {};
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem('ahirYonetimData');
+    if (saved) {
+      appData = JSON.parse(saved);
+      // Eksik alanları varsayılan veriden tamamla
+      if (!appData.animals) appData.animals = [];
+      if (!appData.sales) appData.sales = [];
+      if (!appData.feedPurchases) appData.feedPurchases = [];
+      if (!appData.vetExpenses) appData.vetExpenses = [];
+      if (!appData.kurbanlikCikti) appData.kurbanlikCikti = [];
+    } else {
+      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData();
+    }
+  } catch (err) {
+    console.error('Veri yüklenirken hata:', err);
+    appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    saveData();
+  }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
+  } catch (err) {
+    console.error('Veri kaydedilirken hata:', err);
+    showToast('Veri kaydedilemedi! Depolama alanı dolu olabilir.', 'error');
+  }
+}
+
+// ==========================================
+// NAVIGATION (replaces all SayfayaGit_* macros)
+// ==========================================
+function navigateTo(sectionId) {
+  // Tüm bölümleri gizle, hedefi göster
+  document.querySelectorAll('.section').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  var targetSection = document.getElementById(sectionId);
+  if (targetSection) {
+    targetSection.classList.add('active');
+  }
+
+  // Navigasyonu güncelle
+  document.querySelectorAll('.nav-item').forEach(function(n) {
+    n.classList.remove('active');
+  });
+  var navItem = document.querySelector('.nav-item[data-section="' + sectionId + '"]');
+  if (navItem) {
+    navItem.classList.add('active');
+  }
+
+  // Mobil sidebar kapat
+  var sidebar = document.querySelector('.sidebar');
+  var overlay = document.querySelector('.overlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('active');
+
+  // Bölüm verilerini yenile
+  refreshSection(sectionId);
+
+  // Mobil başlık güncelle
+  var title = navItem ? (navItem.querySelector('.nav-text')?.textContent || '') : '';
+  var mobileTitle = document.querySelector('.mobile-title');
+  if (mobileTitle && title) {
+    mobileTitle.textContent = title;
+  }
+}
+
+function toggleSidebar() {
+  var sidebar = document.querySelector('.sidebar');
+  var overlay = document.querySelector('.overlay');
+  if (sidebar) sidebar.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('active');
+}
+
+function refreshSection(sectionId) {
+  switch (sectionId) {
+    case 'section-dashboard':
+      updateDashboard();
+      break;
+    case 'section-hayvan-listesi':
+      renderAnimalTable();
+      break;
+    case 'section-kurbanlik-satisi':
+      renderSalesTable();
+      break;
+    case 'section-yem-veri':
+      renderFeedTable();
+      break;
+    case 'section-veteriner-veri':
+      renderVetTable();
+      break;
+    case 'section-kurbanlik-cikti':
+      renderKurbanlikCiktiTable();
+      break;
+    case 'section-rapor':
+      updateReport();
+      break;
+    default:
+      break;
+  }
+}
+
+// ==========================================
+// TOAST NOTIFICATIONS
+// ==========================================
+function showToast(message, type) {
+  if (!type) type = 'success';
+  var container = document.getElementById('toast-container');
+  if (!container) return;
+
+  var toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+
+  var icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  var icon = icons[type] || 'ℹ️';
+
+  toast.innerHTML = '<span>' + icon + '</span><span>' + message + '</span>';
+  container.appendChild(toast);
+
+  setTimeout(function() {
+    toast.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(function() {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
+}
+
+// ==========================================
+// HAYVAN EKLE (replaces HayvanEkle VBA macro)
+// ==========================================
+function addAnimal() {
+  var kupeNo = (document.getElementById('he-kupe')?.value || '').trim();
+  var irk = document.getElementById('he-irk')?.value || '';
+  var padok = document.getElementById('he-padok')?.value || '';
+  var cinsiyet = document.getElementById('he-cinsiyet')?.value || '';
+  var alisTarihi = document.getElementById('he-tarih')?.value || '';
+  var dogumTarihi = document.getElementById('he-dogum')?.value || '';
+  var kilo = parseFloat(document.getElementById('he-kilo')?.value) || 0;
+  var alisFiyati = parseFloat(document.getElementById('he-fiyat')?.value) || 0;
+  var durum = document.getElementById('he-durum')?.value || '';
+  var aciklama = document.getElementById('he-aciklama')?.value || '';
+
+  // Doğrulama
+  if (!kupeNo) {
+    showToast('Lütfen Küpe Numarası giriniz!', 'error');
+    return;
+  }
+
+  if (!irk) {
+    showToast('Lütfen ırk seçiniz!', 'error');
+    return;
+  }
+
+  if (!padok) {
+    showToast('Lütfen padok seçiniz!', 'error');
+    return;
+  }
+
+  if (!cinsiyet) {
+    showToast('Lütfen cinsiyet seçiniz!', 'error');
+    return;
+  }
+
+  // Mükerrer kontrolü (duplicate check from VBA)
+  var duplicate = appData.animals.find(function(a) {
+    return a.kupeNo === kupeNo;
+  });
+  if (duplicate) {
+    showToast('Bu küpe numarası (' + kupeNo + ') zaten kayıtlı!', 'error');
+    return;
+  }
+
+  appData.animals.push({
+    kupeNo: kupeNo,
+    irk: irk,
+    padok: padok,
+    cinsiyet: cinsiyet,
+    alisTarihi: alisTarihi,
+    dogumTarihi: dogumTarihi,
+    kilo: kilo,
+    durum: durum,
+    satisDurumu: 'STOKTA',
+    alisFiyati: alisFiyati,
+    aciklama: aciklama
+  });
+
+  saveData();
+  showToast(kupeNo + ' numaralı hayvan başarıyla eklendi.');
+
+  // Formu temizle
+  var form = document.getElementById('form-hayvan-ekle');
+  if (form) form.reset();
+
+  // Bugünün tarihini tekrar ayarla
+  var heTarih = document.getElementById('he-tarih');
+  if (heTarih) heTarih.value = getTodayStr();
+}
+
+// ==========================================
+// SATIŞ YAP (replaces SatisYap VBA macro)
+// ==========================================
+function makeSale() {
+  var musteriAdi = (document.getElementById('se-musteri')?.value || '').trim();
+  var kupeNo = (document.getElementById('se-kupe')?.value || '').trim();
+  var tahminiKilo = parseFloat(document.getElementById('se-kilo')?.value) || 0;
+  var satisFiyati = parseFloat(document.getElementById('se-fiyat')?.value) || 0;
+  var alinanToplam = parseFloat(document.getElementById('se-alinan')?.value) || 0;
+  var hisseAdedi = parseInt(document.getElementById('se-hisse')?.value) || 0;
+
+  // Doğrulama
+  if (!kupeNo) {
+    showToast('Lütfen Küpe No giriniz!', 'error');
+    return;
+  }
+
+  if (!musteriAdi) {
+    showToast('Lütfen Müşteri Adı giriniz!', 'error');
+    return;
+  }
+
+  if (satisFiyati <= 0) {
+    showToast('Lütfen geçerli bir Satış Fiyatı giriniz!', 'error');
+    return;
+  }
+
+  var animal = appData.animals.find(function(a) {
+    return a.kupeNo === kupeNo;
+  });
+
+  if (!animal) {
+    showToast('Küpe No bulunamadı! Lütfen geçerli bir küpe numarası giriniz.', 'error');
+    return;
+  }
+
+  if (animal.satisDurumu === 'SATILDI') {
+    showToast('Bu hayvan zaten satılmış!', 'error');
+    return;
+  }
+
+  // Maliyet hesaplamaları (from VBA SatisYap)
+  var toplamHayvan = appData.animals.length;
+  var birimYemGideri = 0;
+  var birimVetGideri = 0;
+
+  if (toplamHayvan > 0) {
+    var toplamYem = appData.feedPurchases.reduce(function(sum, f) {
+      return sum + (f.odenenFiyat || 0);
+    }, 0);
+    var toplamVet = appData.vetExpenses.reduce(function(sum, v) {
+      return sum + (v.toplamFiyat || 0);
+    }, 0);
+    birimYemGideri = toplamYem / toplamHayvan;
+    birimVetGideri = toplamVet / toplamHayvan;
+  }
+
+  var satisTuru = hisseAdedi > 0 ? (hisseAdedi + ' Hisse') : 'TAM SATIŞ';
+  var toplamMaliyet = (animal.alisFiyati || 0) + birimYemGideri + birimVetGideri;
+  var kalan = satisFiyati > 0 && animal.alisFiyati > 0 ? satisFiyati - animal.alisFiyati : 0;
+  var karYuzdesi = satisFiyati > 0 && animal.alisFiyati > 0 ? (satisFiyati - animal.alisFiyati) / satisFiyati : 0;
+
+  // Satış kaydı ekle
+  appData.sales.push({
+    kupeNo: kupeNo,
+    musteriAdi: musteriAdi,
+    irk: animal.irk,
+    padok: animal.padok,
+    cinsiyet: animal.cinsiyet,
+    satisTuru: satisTuru,
+    tahminiKilo: tahminiKilo,
+    alisFiyati: animal.alisFiyati,
+    vetGideri: birimVetGideri,
+    yemGideri: birimYemGideri,
+    satisFiyati: satisFiyati,
+    alinanToplam: alinanToplam,
+    kalan: kalan,
+    karYuzdesi: karYuzdesi
+  });
+
+  // Hayvan durumunu güncelle
+  if (hisseAdedi > 0) {
+    animal.satisDurumu = 'Hisseli Satış';
+  } else {
+    animal.satisDurumu = 'SATILDI';
+  }
+
+  saveData();
+  showToast('Satış ve tüm maliyetler başarıyla aktarıldı.');
+
+  // Formu temizle
+  var form = document.getElementById('form-satis-ekle');
+  if (form) form.reset();
+}
+
+// ==========================================
+// YEM ALIM KAYDET (replaces YemAlimKaydet VBA)
+// ==========================================
+function addFeedPurchase() {
+  var yemMarkasi = (document.getElementById('ye-marka')?.value || '').trim();
+  var yemTuru = (document.getElementById('ye-tur')?.value || '').trim();
+  var birimFiyati = parseFloat(document.getElementById('ye-birim')?.value) || 0;
+  var adeti = parseFloat(document.getElementById('ye-adet')?.value) || 0;
+  var alimTarihi = document.getElementById('ye-tarih')?.value || '';
+
+  // Doğrulama
+  if (!yemMarkasi) {
+    showToast('Lütfen Yem Markası giriniz!', 'error');
+    return;
+  }
+
+  if (birimFiyati <= 0) {
+    showToast('Lütfen geçerli bir Birim Fiyatı giriniz!', 'error');
+    return;
+  }
+
+  if (adeti <= 0) {
+    showToast('Lütfen geçerli bir Adet giriniz!', 'error');
+    return;
+  }
+
+  var toplamFiyat = birimFiyati * adeti;
+
+  appData.feedPurchases.push({
+    yemMarkasi: yemMarkasi,
+    yemTuru: yemTuru,
+    alimTarihi: alimTarihi,
+    birimFiyati: birimFiyati,
+    adeti: adeti,
+    odenenFiyat: toplamFiyat,
+    toplamFiyat: toplamFiyat
+  });
+
+  saveData();
+  showToast(yemMarkasi + ' kaydı başarıyla eklendi.');
+
+  // Formu temizle
+  var form = document.getElementById('form-yem-ekle');
+  if (form) form.reset();
+
+  // Bugünün tarihini tekrar ayarla
+  var yeTarih = document.getElementById('ye-tarih');
+  if (yeTarih) yeTarih.value = getTodayStr();
+
+  updateYemToplam();
+  distributeCosts(); // Otomatik maliyet dağıtımı (VBA OtomatikMaliyetDagit)
+}
+
+// ==========================================
+// VETERİNER GİDERİ EKLE (replaces VeterinerGideriEkle VBA)
+// ==========================================
+function addVetExpense() {
+  var veterinerAdi = (document.getElementById('ve-ad')?.value || '').trim();
+  var alinanIlac = (document.getElementById('ve-ilac')?.value || '').trim();
+  var adeti = parseFloat(document.getElementById('ve-adet')?.value) || 0;
+  var birimFiyati = parseFloat(document.getElementById('ve-birim')?.value) || 0;
+  var veterinerHizmeti = parseFloat(document.getElementById('ve-hizmet')?.value) || 0;
+
+  // Doğrulama
+  if (!alinanIlac) {
+    showToast('Lütfen İlaç Adı giriniz!', 'error');
+    return;
+  }
+
+  if (birimFiyati <= 0) {
+    showToast('Lütfen geçerli bir Birim Fiyatı giriniz!', 'error');
+    return;
+  }
+
+  // Toplam = (Adet * BirimFiyat) + VeterinerHizmeti (B5*B6+B7 formula)
+  var toplamFiyat = (adeti * birimFiyati) + veterinerHizmeti;
+
+  appData.vetExpenses.push({
+    veterinerAdi: veterinerAdi,
+    alinanIlac: alinanIlac,
+    adeti: adeti,
+    birimFiyati: birimFiyati,
+    veterinerHizmeti: veterinerHizmeti,
+    toplamFiyat: toplamFiyat
+  });
+
+  saveData();
+  showToast('Veteriner gideri başarıyla kaydedildi.');
+
+  // Formu temizle
+  var form = document.getElementById('form-vet-ekle');
+  if (form) form.reset();
+
+  updateVetToplam();
+  distributeCosts(); // Otomatik maliyet dağıtımı
+}
+
+// ==========================================
+// COST DISTRIBUTION (replaces YemMaliyetiniDagit & OtomatikMaliyetDagit VBA)
+// ==========================================
+function distributeCosts() {
+  var toplamHayvan = appData.animals.length;
+  if (toplamHayvan <= 0) return;
+
+  var toplamYem = appData.feedPurchases.reduce(function(sum, f) {
+    return sum + (f.odenenFiyat || 0);
+  }, 0);
+
+  var toplamVet = appData.vetExpenses.reduce(function(sum, v) {
+    return sum + (v.toplamFiyat || 0);
+  }, 0);
+
+  var birimYemGideri = toplamYem / toplamHayvan;
+  var birimVetGideri = toplamVet / toplamHayvan;
+
+  // Tüm satış kayıtlarını hayvan başı maliyetlerle güncelle
+  appData.sales.forEach(function(sale) {
+    sale.yemGideri = parseFloat(birimYemGideri.toFixed(2));
+    sale.vetGideri = parseFloat(birimVetGideri.toFixed(2));
+  });
+
+  saveData();
+}
+
+// ==========================================
+// SEARCH FUNCTIONS (replaces Worksheet_Change events)
+// ==========================================
+function searchAnimal() {
+  var kupeNo = (document.getElementById('ha-kupe')?.value || '').trim();
+  var resultDiv = document.getElementById('ha-result');
+  if (!resultDiv) return;
+
+  if (!kupeNo) {
+    resultDiv.classList.add('hidden');
+    return;
+  }
+
+  var animal = appData.animals.find(function(a) {
+    return a.kupeNo === kupeNo;
+  });
+
+  resultDiv.classList.remove('hidden');
+
+  if (animal) {
+    resultDiv.innerHTML =
+      '<div class="card">' +
+        '<div class="card-header">🐄 Hayvan Bilgileri - ' + escapeHtml(animal.kupeNo) + '</div>' +
+        '<div class="result-grid">' +
+          '<div class="result-item"><span class="result-label">Irk</span><span class="result-value">' + escapeHtml(animal.irk) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Cinsiyet</span><span class="result-value">' + escapeHtml(animal.cinsiyet) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Alış Tarihi</span><span class="result-value">' + formatDate(animal.alisTarihi) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Doğum Tarihi</span><span class="result-value">' + (formatDate(animal.dogumTarihi) || '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Durum</span><span class="result-value">' + (animal.durum || '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Padok</span><span class="result-value">' + escapeHtml(animal.padok) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Kilo</span><span class="result-value">' + animal.kilo + ' kg</span></div>' +
+          '<div class="result-item"><span class="result-label">Alış Fiyatı</span><span class="result-value">' + formatMoney(animal.alisFiyati) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Satış Durumu</span><span class="result-value">' + getBadge(animal.satisDurumu) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Açıklama</span><span class="result-value">' + (escapeHtml(animal.aciklama) || '-') + '</span></div>' +
+        '</div>' +
+      '</div>';
+  } else {
+    resultDiv.innerHTML = '<div class="card"><p class="text-danger">❌ Küpe numarası bulunamadı!</p></div>';
+  }
+}
+
+function searchKurbanlik() {
+  var kupeNo = (document.getElementById('ka-kupe')?.value || '').trim();
+  var resultDiv = document.getElementById('ka-result');
+  if (!resultDiv) return;
+
+  if (!kupeNo) {
+    resultDiv.classList.add('hidden');
+    return;
+  }
+
+  var sale = appData.sales.find(function(s) {
+    return s.kupeNo === kupeNo;
+  });
+  var animal = appData.animals.find(function(a) {
+    return a.kupeNo === kupeNo;
+  });
+
+  resultDiv.classList.remove('hidden');
+
+  if (sale || animal) {
+    var data = sale || animal;
+    var kgFiyati = sale && sale.tahminiKilo > 0 ? sale.satisFiyati / sale.tahminiKilo : 0;
+
+    resultDiv.innerHTML =
+      '<div class="card">' +
+        '<div class="card-header">🔎 Kurbanlık Bilgileri - ' + escapeHtml(kupeNo) + '</div>' +
+        '<div class="result-grid">' +
+          '<div class="result-item"><span class="result-label">Küpe No</span><span class="result-value">' + escapeHtml(kupeNo) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Müşteri Adı</span><span class="result-value">' + (sale ? escapeHtml(sale.musteriAdi) : '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Cinsiyet</span><span class="result-value">' + escapeHtml(data.cinsiyet || '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Irk</span><span class="result-value">' + escapeHtml(data.irk || '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Satış Durumu</span><span class="result-value">' + (animal ? getBadge(animal.satisDurumu) : '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Padok</span><span class="result-value">' + escapeHtml(data.padok || '-') + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Kilo</span><span class="result-value">' + ((sale ? sale.tahminiKilo : (animal ? animal.kilo : 0)) || '-') + ' kg</span></div>' +
+          '<div class="result-item"><span class="result-label">Satış KG Fiyatı</span><span class="result-value">' + (kgFiyati ? formatMoney(kgFiyati) : '-') + '</span></div>' +
+        '</div>' +
+      '</div>';
+  } else {
+    resultDiv.innerHTML = '<div class="card"><p class="text-danger">❌ Kurbanlık bulunamadı!</p></div>';
+  }
+}
+
+function searchCustomer() {
+  var musteriAdi = (document.getElementById('ma-musteri')?.value || '').trim().toUpperCase();
+  var resultDiv = document.getElementById('ma-result');
+  if (!resultDiv) return;
+
+  if (!musteriAdi) {
+    resultDiv.classList.add('hidden');
+    return;
+  }
+
+  // Hem satış hem kurbanlık çıktı kayıtlarından ara
+  var salesMatches = appData.sales.filter(function(s) {
+    return s.musteriAdi.toUpperCase().includes(musteriAdi);
+  });
+
+  var ciktiMatches = appData.kurbanlikCikti.filter(function(k) {
+    return k.musteriAdi.toUpperCase().includes(musteriAdi);
+  });
+
+  resultDiv.classList.remove('hidden');
+
+  var html = '';
+
+  if (salesMatches.length > 0) {
+    html += salesMatches.map(function(s) {
+      return '<div class="card">' +
+        '<div class="card-header">👤 ' + escapeHtml(s.musteriAdi) + ' - Küpe: ' + escapeHtml(s.kupeNo) + '</div>' +
+        '<div class="result-grid">' +
+          '<div class="result-item"><span class="result-label">Irk</span><span class="result-value">' + escapeHtml(s.irk) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Cinsiyet</span><span class="result-value">' + escapeHtml(s.cinsiyet) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Satış Türü</span><span class="result-value">' + escapeHtml(s.satisTuru) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Satış Fiyatı</span><span class="result-value">' + formatMoney(s.satisFiyati) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Alınan Toplam</span><span class="result-value">' + formatMoney(s.alinanToplam) + '</span></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  if (ciktiMatches.length > 0) {
+    html += ciktiMatches.map(function(k) {
+      return '<div class="card">' +
+        '<div class="card-header">🐄 ' + escapeHtml(k.musteriAdi) + ' - Küpe: ' + escapeHtml(k.kupeNo) + ' (Hisseli)</div>' +
+        '<div class="result-grid">' +
+          '<div class="result-item"><span class="result-label">Irk</span><span class="result-value">' + escapeHtml(k.irk) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Padok</span><span class="result-value">' + escapeHtml(k.padokNo) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Satış Fiyatı</span><span class="result-value">' + formatMoney(k.satisFiyati) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Alınan Ücret</span><span class="result-value">' + formatMoney(k.alinanUcret) + '</span></div>' +
+          '<div class="result-item"><span class="result-label">Kalan Ücret</span><span class="result-value">' + formatMoney(k.kalanUcret) + '</span></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  if (!html) {
+    html = '<div class="card"><p class="text-danger">❌ Müşteri bulunamadı!</p></div>';
+  }
+
+  resultDiv.innerHTML = html;
+}
+
+// ==========================================
+// TABLE RENDERING
+// ==========================================
+function renderAnimalTable() {
+  var tbody = document.querySelector('#table-hayvan-listesi tbody');
+  if (!tbody) return;
+
+  var filter = (document.getElementById('filter-hayvan-listesi')?.value || '').toLowerCase();
+
+  var filtered = appData.animals.filter(function(a) {
+    if (!filter) return true;
+    return Object.values(a).some(function(v) {
+      return String(v).toLowerCase().includes(filter);
+    });
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 2rem; color: #6b7280;">Kayıt bulunamadı</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function(a, i) {
+    // Gerçek index'i bul (filtrelenmiş değil, appData.animals içindeki)
+    var realIndex = appData.animals.indexOf(a);
+    return '<tr>' +
+      '<td data-label="Küpe No">' + escapeHtml(a.kupeNo) + '</td>' +
+      '<td data-label="Irk">' + escapeHtml(a.irk) + '</td>' +
+      '<td data-label="Padok">' + escapeHtml(a.padok) + '</td>' +
+      '<td data-label="Cinsiyet">' + escapeHtml(a.cinsiyet) + '</td>' +
+      '<td data-label="Alış Tarihi">' + formatDate(a.alisTarihi) + '</td>' +
+      '<td data-label="Doğum Tarihi">' + (formatDate(a.dogumTarihi) || '-') + '</td>' +
+      '<td data-label="Kilo">' + a.kilo + '</td>' +
+      '<td data-label="Durum">' + getBadge(a.durum, 'info') + '</td>' +
+      '<td data-label="Satış Durumu">' + getBadge(a.satisDurumu) + '</td>' +
+      '<td data-label="Alış Fiyatı">' + formatMoney(a.alisFiyati) + '</td>' +
+      '<td data-label="Açıklama">' + (escapeHtml(a.aciklama) || '-') + '</td>' +
+      '<td data-label="İşlem"><button class="btn btn-sm btn-danger" onclick="deleteAnimal(' + realIndex + ')">Sil</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderSalesTable() {
+  var tbody = document.querySelector('#table-kurbanlik-satisi tbody');
+  if (!tbody) return;
+
+  if (appData.sales.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 2rem; color: #6b7280;">Satış kaydı bulunmamaktadır</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = appData.sales.map(function(s, i) {
+    // IFERROR(K/G,"") - KG Fiyatı
+    var kgFiyati = s.tahminiKilo > 0 ? s.satisFiyati / s.tahminiKilo : 0;
+    // IFERROR(IF(K-H=0,"",K-H),"") - Kalan
+    var kalan = (s.satisFiyati > 0 && s.alisFiyati > 0) ? (s.satisFiyati - s.alisFiyati) : 0;
+    // IFERROR kar yüzdesi
+    var karYuzdesi = (s.satisFiyati > 0 && s.alisFiyati > 0) ? ((s.satisFiyati - s.alisFiyati) / s.satisFiyati) : 0;
+
+    return '<tr>' +
+      '<td data-label="Küpe No">' + escapeHtml(s.kupeNo) + '</td>' +
+      '<td data-label="Müşteri Adı">' + escapeHtml(s.musteriAdi) + '</td>' +
+      '<td data-label="Irk">' + escapeHtml(s.irk) + '</td>' +
+      '<td data-label="Padok">' + escapeHtml(s.padok) + '</td>' +
+      '<td data-label="Cinsiyet">' + escapeHtml(s.cinsiyet) + '</td>' +
+      '<td data-label="Satış Türü">' + escapeHtml(s.satisTuru) + '</td>' +
+      '<td data-label="Tahmini Kilo">' + s.tahminiKilo + '</td>' +
+      '<td data-label="Alış Fiyatı">' + formatMoney(s.alisFiyati) + '</td>' +
+      '<td data-label="Vet. Gideri">' + formatMoney(s.vetGideri) + '</td>' +
+      '<td data-label="Yem Gideri">' + formatMoney(s.yemGideri) + '</td>' +
+      '<td data-label="Satış Fiyatı">' + formatMoney(s.satisFiyati) + '</td>' +
+      '<td data-label="KG Fiyatı">' + (kgFiyati ? formatMoney(kgFiyati) : '-') + '</td>' +
+      '<td data-label="Alınan Toplam">' + formatMoney(s.alinanToplam) + '</td>' +
+      '<td data-label="Kalan">' + (kalan ? formatMoney(kalan) : '-') + '</td>' +
+      '<td data-label="Kâr %">' + (karYuzdesi ? '%' + (karYuzdesi * 100).toFixed(1) : '-') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderFeedTable() {
+  var tbody = document.querySelector('#table-yem-veri tbody');
+  if (!tbody) return;
+
+  if (appData.feedPurchases.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #6b7280;">Yem alım kaydı bulunmamaktadır</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = appData.feedPurchases.map(function(f, i) {
+    return '<tr>' +
+      '<td data-label="Yem Markası">' + escapeHtml(f.yemMarkasi) + '</td>' +
+      '<td data-label="Yem Türü">' + escapeHtml(f.yemTuru) + '</td>' +
+      '<td data-label="Alım Tarihi">' + formatDate(f.alimTarihi) + '</td>' +
+      '<td data-label="Birim Fiyatı">' + formatMoney(f.birimFiyati) + '</td>' +
+      '<td data-label="Adeti">' + f.adeti + '</td>' +
+      '<td data-label="Ödenen Fiyat">' + formatMoney(f.odenenFiyat) + '</td>' +
+      '<td data-label="Toplam Fiyat">' + formatMoney(f.toplamFiyat) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Genel toplam - SUMPRODUCT formülüne eşdeğer
+  var total = appData.feedPurchases.reduce(function(sum, f) {
+    return sum + (f.odenenFiyat || 0);
+  }, 0);
+  var totalEl = document.getElementById('yem-genel-toplam');
+  if (totalEl) totalEl.textContent = formatMoney(total);
+}
+
+function renderVetTable() {
+  var tbody = document.querySelector('#table-vet-veri tbody');
+  if (!tbody) return;
+
+  if (appData.vetExpenses.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #6b7280;">Veteriner gider kaydı bulunmamaktadır</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = appData.vetExpenses.map(function(v, i) {
+    return '<tr>' +
+      '<td data-label="Veteriner Adı">' + escapeHtml(v.veterinerAdi) + '</td>' +
+      '<td data-label="Alınan İlaç">' + escapeHtml(v.alinanIlac) + '</td>' +
+      '<td data-label="Adeti">' + v.adeti + '</td>' +
+      '<td data-label="Birim Fiyatı">' + formatMoney(v.birimFiyati) + '</td>' +
+      '<td data-label="Vet. Hizmeti">' + formatMoney(v.veterinerHizmeti) + '</td>' +
+      '<td data-label="Toplam Fiyat">' + formatMoney(v.toplamFiyat) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Genel toplam
+  var total = appData.vetExpenses.reduce(function(sum, v) {
+    return sum + (v.toplamFiyat || 0);
+  }, 0);
+  var totalEl = document.getElementById('vet-genel-toplam');
+  if (totalEl) totalEl.textContent = formatMoney(total);
+}
+
+function renderKurbanlikCiktiTable() {
+  var tbody = document.querySelector('#table-kurbanlik-cikti tbody');
+  if (!tbody) return;
+
+  if (appData.kurbanlikCikti.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: #6b7280;">Kurbanlık çıktı kaydı bulunmamaktadır</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = appData.kurbanlikCikti.map(function(k, i) {
+    return '<tr>' +
+      '<td data-label="Küpe No">' + escapeHtml(k.kupeNo) + '</td>' +
+      '<td data-label="Müşteri Adı">' + escapeHtml(k.musteriAdi) + '</td>' +
+      '<td data-label="Irk">' + escapeHtml(k.irk) + '</td>' +
+      '<td data-label="Padok No">' + escapeHtml(k.padokNo) + '</td>' +
+      '<td data-label="Satış Fiyatı">' + formatMoney(k.satisFiyati) + '</td>' +
+      '<td data-label="Alınan Ücret">' + formatMoney(k.alinanUcret) + '</td>' +
+      '<td data-label="Kalan Ücret">' + formatMoney(k.kalanUcret) + '</td>' +
+      '<td data-label="Kurbanda Alınan">' + formatMoney(k.kurbandaAlinanUcret) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ==========================================
+// DASHBOARD & REPORT (replaces RAPOR sheet calculations)
+// ==========================================
+function updateDashboard() {
+  var animals = appData.animals || [];
+  var sales = appData.sales || [];
+  var feeds = appData.feedPurchases || [];
+  var vets = appData.vetExpenses || [];
+
+  // Hayvan istatistikleri
+  var aktif = animals.filter(function(a) { return a.satisDurumu === 'STOKTA'; }).length;
+  var pasif = animals.filter(function(a) { return a.satisDurumu !== 'STOKTA'; }).length;
+  var kurbanlik = animals.filter(function(a) { return a.durum === 'KURBANLIK'; }).length;
+  var satilanKurbanlik = animals.filter(function(a) { return a.durum === 'KURBANLIK' && a.satisDurumu === 'SATILDI'; }).length;
+  var kalanKurbanlik = animals.filter(function(a) { return a.durum === 'KURBANLIK' && a.satisDurumu === 'STOKTA'; }).length;
+  var besi = animals.filter(function(a) { return a.durum === 'BESİ'; }).length;
+  var damizlik = animals.filter(function(a) { return a.durum === 'DAMIZLIK'; }).length;
+
+  // Mali istatistikler
+  var toplamAlis = animals.reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
+  var toplamSatis = sales.reduce(function(s, sale) { return s + (sale.satisFiyati || 0); }, 0);
+  var toplamYem = feeds.reduce(function(s, f) { return s + (f.odenenFiyat || 0); }, 0);
+  var toplamVet = vets.reduce(function(s, v) { return s + (v.toplamFiyat || 0); }, 0);
+
+  // Sadece satılan hayvanların alış fiyatlarının toplamı
+  var satilanKupelar = sales.map(function(s) { return s.kupeNo; });
+  var satilanAlis = animals.filter(function(a) {
+    return satilanKupelar.includes(a.kupeNo);
+  }).reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
+
+  var karZarar = toplamSatis - satilanAlis - toplamYem - toplamVet;
+
+  // DOM güncellemeleri
+  setText('stat-toplam-hayvan', animals.length);
+  setText('stat-aktif', aktif);
+  setText('stat-pasif', pasif);
+  setText('stat-kurbanlik', kurbanlik);
+  setText('stat-satilan-kurbanlik', satilanKurbanlik);
+  setText('stat-kalan-kurbanlik', kalanKurbanlik);
+  setText('stat-besi', besi);
+  setText('stat-damizlik', damizlik);
+  setText('stat-toplam-alis', formatMoney(toplamAlis));
+  setText('stat-toplam-satis', formatMoney(toplamSatis));
+  setText('stat-toplam-yem', formatMoney(toplamYem));
+  setText('stat-kar-zarar', formatMoney(karZarar));
+
+  // Kâr/zarar rengini ayarla
+  var karEl = document.getElementById('stat-kar-zarar');
+  if (karEl) {
+    karEl.style.color = karZarar >= 0 ? '#10b981' : '#ef4444';
+  }
+}
+
+function updateReport() {
+  updateDashboard(); // Rapor aynı istatistikleri kullanır
+
+  // Ek rapor detayları - Padok bazlı dağılım
+  var padokStats = {};
+  appData.animals.forEach(function(a) {
+    if (!padokStats[a.padok]) {
+      padokStats[a.padok] = { toplam: 0, stokta: 0, satilan: 0 };
+    }
+    padokStats[a.padok].toplam++;
+    if (a.satisDurumu === 'STOKTA') {
+      padokStats[a.padok].stokta++;
+    } else {
+      padokStats[a.padok].satilan++;
+    }
+  });
+
+  var padokContainer = document.getElementById('padok-rapor');
+  if (padokContainer) {
+    var padokHtml = '';
+    Object.keys(padokStats).sort().forEach(function(padok) {
+      var stat = padokStats[padok];
+      padokHtml += '<div class="stat-card">' +
+        '<div class="stat-label">' + escapeHtml(padok) + '</div>' +
+        '<div class="stat-value">' + stat.toplam + '</div>' +
+        '<div class="stat-sub">Stokta: ' + stat.stokta + ' | Satılan: ' + stat.satilan + '</div>' +
+      '</div>';
+    });
+    padokContainer.innerHTML = padokHtml;
+  }
+
+  // Irk bazlı dağılım
+  var irkStats = {};
+  appData.animals.forEach(function(a) {
+    if (!irkStats[a.irk]) irkStats[a.irk] = 0;
+    irkStats[a.irk]++;
+  });
+
+  var irkContainer = document.getElementById('irk-rapor');
+  if (irkContainer) {
+    var irkHtml = '';
+    Object.keys(irkStats).sort().forEach(function(irk) {
+      irkHtml += '<div class="stat-card">' +
+        '<div class="stat-label">' + escapeHtml(irk) + '</div>' +
+        '<div class="stat-value">' + irkStats[irk] + '</div>' +
+      '</div>';
+    });
+    irkContainer.innerHTML = irkHtml;
+  }
+}
+
+// ==========================================
+// DELETE FUNCTIONS
+// ==========================================
+function deleteAnimal(index) {
+  if (index < 0 || index >= appData.animals.length) {
+    showToast('Geçersiz kayıt!', 'error');
+    return;
+  }
+
+  var animal = appData.animals[index];
+  var confirmMsg = animal.kupeNo + ' küpe numaralı hayvanı silmek istediğinize emin misiniz?';
+
+  if (confirm(confirmMsg)) {
+    appData.animals.splice(index, 1);
+    saveData();
+    renderAnimalTable();
+    showToast(animal.kupeNo + ' numaralı hayvan kaydı silindi.', 'warning');
+  }
+}
+
+function deleteSale(index) {
+  if (index < 0 || index >= appData.sales.length) {
+    showToast('Geçersiz kayıt!', 'error');
+    return;
+  }
+
+  var sale = appData.sales[index];
+  var confirmMsg = sale.kupeNo + ' küpe numaralı satış kaydını silmek istediğinize emin misiniz?';
+
+  if (confirm(confirmMsg)) {
+    // Hayvanın satış durumunu geri al
+    var animal = appData.animals.find(function(a) { return a.kupeNo === sale.kupeNo; });
+    if (animal) {
+      // Aynı küpe ile başka satış var mı kontrol et
+      var otherSales = appData.sales.filter(function(s, i) {
+        return s.kupeNo === sale.kupeNo && i !== index;
+      });
+      if (otherSales.length === 0) {
+        animal.satisDurumu = 'STOKTA';
+      }
+    }
+
+    appData.sales.splice(index, 1);
+    saveData();
+    renderSalesTable();
+    showToast('Satış kaydı silindi.', 'warning');
+  }
+}
+
+function deleteFeed(index) {
+  if (index < 0 || index >= appData.feedPurchases.length) {
+    showToast('Geçersiz kayıt!', 'error');
+    return;
+  }
+
+  if (confirm('Bu yem alım kaydını silmek istediğinize emin misiniz?')) {
+    appData.feedPurchases.splice(index, 1);
+    saveData();
+    renderFeedTable();
+    distributeCosts();
+    showToast('Yem alım kaydı silindi.', 'warning');
+  }
+}
+
+function deleteVet(index) {
+  if (index < 0 || index >= appData.vetExpenses.length) {
+    showToast('Geçersiz kayıt!', 'error');
+    return;
+  }
+
+  if (confirm('Bu veteriner gider kaydını silmek istediğinize emin misiniz?')) {
+    appData.vetExpenses.splice(index, 1);
+    saveData();
+    renderVetTable();
+    distributeCosts();
+    showToast('Veteriner gider kaydı silindi.', 'warning');
+  }
+}
+
+// ==========================================
+// AUTO-CALCULATE FORM TOTALS
+// ==========================================
+function updateYemToplam() {
+  var birim = parseFloat(document.getElementById('ye-birim')?.value) || 0;
+  var adet = parseFloat(document.getElementById('ye-adet')?.value) || 0;
+  var toplamEl = document.getElementById('ye-toplam');
+  if (toplamEl) toplamEl.textContent = formatMoney(birim * adet);
+}
+
+function updateVetToplam() {
+  var adet = parseFloat(document.getElementById('ve-adet')?.value) || 0;
+  var birim = parseFloat(document.getElementById('ve-birim')?.value) || 0;
+  var hizmet = parseFloat(document.getElementById('ve-hizmet')?.value) || 0;
+  var toplamEl = document.getElementById('ve-toplam');
+  if (toplamEl) toplamEl.textContent = formatMoney((adet * birim) + hizmet);
+}
+
+// ==========================================
+// DATA EXPORT / IMPORT / RESET
+// ==========================================
+function exportData() {
+  try {
+    var dataStr = JSON.stringify(appData, null, 2);
+    var blob = new Blob([dataStr], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ahir_yedek_' + getTodayStr() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Veri yedeği indirildi.', 'info');
+  } catch (err) {
+    showToast('Dışa aktarma hatası: ' + err.message, 'error');
+  }
+}
+
+function importData() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+
+        // Veri yapısı doğrulaması
+        if (!data.animals || !Array.isArray(data.animals)) {
+          showToast('Geçersiz dosya formatı! animals alanı bulunamadı.', 'error');
+          return;
+        }
+        if (!data.sales || !Array.isArray(data.sales)) {
+          showToast('Geçersiz dosya formatı! sales alanı bulunamadı.', 'error');
+          return;
+        }
+
+        if (confirm('Mevcut veriler üzerine yazılacak. Devam etmek istiyor musunuz?')) {
+          // Eksik alanları tamamla
+          if (!data.feedPurchases) data.feedPurchases = [];
+          if (!data.vetExpenses) data.vetExpenses = [];
+          if (!data.kurbanlikCikti) data.kurbanlikCikti = [];
+
+          appData = data;
+          saveData();
+          navigateTo('section-dashboard');
+          showToast('Veri başarıyla yüklendi.');
+        }
+      } catch (err) {
+        showToast('Dosya okunamadı: ' + err.message, 'error');
+      }
+    };
+
+    reader.onerror = function() {
+      showToast('Dosya okunamadı!', 'error');
+    };
+
+    reader.readAsText(file);
+  };
+
+  input.click();
+}
+
+function resetData() {
+  if (confirm('⚠️ TÜM VERİLER SİFIRLANACAK!\n\nBu işlem geri alınamaz. Emin misiniz?')) {
+    if (confirm('Son kez onaylayın: Tüm hayvan, satış, yem ve veteriner kayıtları silinecek!')) {
+      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData();
+      navigateTo('section-dashboard');
+      showToast('Veriler fabrika ayarlarına döndürüldü.', 'warning');
+    }
+  }
+}
+
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
+function formatMoney(amount) {
+  if (amount === null || amount === undefined || amount === '') return '-';
+  if (isNaN(amount)) return '-';
+
+  try {
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  } catch (err) {
+    // Fallback
+    return '₺' + Number(amount).toLocaleString('tr-TR');
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (err) {
+    return dateStr;
+  }
+}
+
+function getTodayStr() {
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = String(now.getMonth() + 1).padStart(2, '0');
+  var day = String(now.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
+function setText(id, value) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function getBadge(status, defaultType) {
+  var map = {
+    'STOKTA': 'success',
+    'SATILDI': 'danger',
+    'Hisseli Satış': 'warning',
+    'ÖLDÜ': 'danger',
+    'KURBANLIK': 'info',
+    'BESİ': 'warning',
+    'DAMIZLIK': 'success'
+  };
+  var type = map[status] || defaultType || 'info';
+  return '<span class="badge badge-' + type + '">' + (status || '-') + '</span>';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  var text = String(str);
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(text));
+  return div.innerHTML;
+}
+
+// ==========================================
+// PWA INSTALL
+// ==========================================
+var deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  var banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('show');
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(result) {
+      if (result.outcome === 'accepted') {
+        showToast('Uygulama yüklendi! 🎉');
+      }
+      deferredPrompt = null;
+      var banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.classList.remove('show');
+    });
+  }
+}
+
+function dismissInstallBanner() {
+  var banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.remove('show');
+}
+
+// ==========================================
+// SERVICE WORKER REGISTRATION
+// ==========================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').then(function(registration) {
+      console.log('Service Worker kayıtlı:', registration.scope);
+    }).catch(function(err) {
+      console.log('Service Worker kaydı başarısız:', err);
+    });
+  });
+}
+
+// ==========================================
+// EVENT LISTENERS & INIT
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+  // Veriyi yükle
+  loadData();
+
+  // Dashboard'u güncelle
+  updateDashboard();
+
+  // Yem toplam otomatik hesaplama
+  var yeBirim = document.getElementById('ye-birim');
+  var yeAdet = document.getElementById('ye-adet');
+  if (yeBirim) yeBirim.addEventListener('input', updateYemToplam);
+  if (yeAdet) yeAdet.addEventListener('input', updateYemToplam);
+
+  // Veteriner toplam otomatik hesaplama
+  var veAdet = document.getElementById('ve-adet');
+  var veBirim = document.getElementById('ve-birim');
+  var veHizmet = document.getElementById('ve-hizmet');
+  if (veAdet) veAdet.addEventListener('input', updateVetToplam);
+  if (veBirim) veBirim.addEventListener('input', updateVetToplam);
+  if (veHizmet) veHizmet.addEventListener('input', updateVetToplam);
+
+  // Varsayılan tarihleri ayarla
+  var today = getTodayStr();
+  var heTarih = document.getElementById('he-tarih');
+  if (heTarih && !heTarih.value) heTarih.value = today;
+  var yeTarih = document.getElementById('ye-tarih');
+  if (yeTarih && !yeTarih.value) yeTarih.value = today;
+
+  // Hayvan tablosu filtre girişi
+  var filterInput = document.getElementById('filter-hayvan-listesi');
+  if (filterInput) {
+    filterInput.addEventListener('input', renderAnimalTable);
+  }
+
+  // Enter tuşu desteği arama girişleri için
+  var haKupe = document.getElementById('ha-kupe');
+  if (haKupe) {
+    haKupe.addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') searchAnimal();
+    });
+  }
+
+  var kaKupe = document.getElementById('ka-kupe');
+  if (kaKupe) {
+    kaKupe.addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') searchKurbanlik();
+    });
+  }
+
+  var maMusteri = document.getElementById('ma-musteri');
+  if (maMusteri) {
+    maMusteri.addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') searchCustomer();
+    });
+  }
+
+  // Navigasyon tıklama olayları
+  document.querySelectorAll('.nav-item').forEach(function(navItem) {
+    navItem.addEventListener('click', function(e) {
+      e.preventDefault();
+      var sectionId = this.getAttribute('data-section');
+      if (sectionId) navigateTo(sectionId);
+    });
+  });
+
+  // Overlay tıklamasıyla sidebar kapatma
+  var overlay = document.querySelector('.overlay');
+  if (overlay) {
+    overlay.addEventListener('click', function() {
+      toggleSidebar();
+    });
+  }
+
+  // Hamburger menü butonu
+  var menuBtn = document.querySelector('.menu-btn');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', function() {
+      toggleSidebar();
+    });
+  }
+
+  console.log('Ali Ahır - Ahır Yönetim Sistemi başlatıldı. Toplam hayvan: ' + appData.animals.length);
+});

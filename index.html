@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kapaklı Mert Besi - Çiftlik ve Ahır Yönetim Sistemi">
+    <meta name="theme-color" content="#1B5E20">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <title>Kapaklı Mert Besi - Ahır Yönetim Sistemi</title>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon">🐄</span>
+            <span class="logo-text">KAPAKLI MERT BESİ</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-section="section-dashboard" onclick="navigateTo('section-dashboard')">
+                <span class="nav-icon">📊</span><span class="nav-label">Ana Sayfa</span>
+            </div>
+            <div class="nav-item" data-section="section-hayvan-ekle" onclick="navigateTo('section-hayvan-ekle')">
+                <span class="nav-icon">➕</span><span class="nav-label">Hayvan Ekle</span>
+            </div>
+            <div class="nav-item" data-section="section-hayvan-listesi" onclick="navigateTo('section-hayvan-listesi')">
+                <span class="nav-icon">📋</span><span class="nav-label">Hayvan Listesi</span>
+            </div>
+            <div class="nav-item" data-section="section-hayvan-ara" onclick="navigateTo('section-hayvan-ara')">
+                <span class="nav-icon">🔍</span><span class="nav-label">Hayvan Ara</span>
+            </div>
+            <div class="nav-item" data-section="section-satis-ekle" onclick="navigateTo('section-satis-ekle')">
+                <span class="nav-icon">💰</span><span class="nav-label">Satış Ekle</span>
+            </div>
+            <div class="nav-item" data-section="section-kurbanlik-satisi" onclick="navigateTo('section-kurbanlik-satisi')">
+                <span class="nav-icon">📑</span><span class="nav-label">Satış Geçmişi</span>
+            </div>
+            <div class="nav-item" data-section="section-yem-ekle" onclick="navigateTo('section-yem-ekle')">
+                <span class="nav-icon">🌾</span><span class="nav-label">Yem Alımı</span>
+            </div>
+            <div class="nav-item" data-section="section-yem-veri" onclick="navigateTo('section-yem-veri')">
+                <span class="nav-icon">📦</span><span class="nav-label">Yem Kayıtları</span>
+            </div>
+            <div class="nav-item" data-section="section-veteriner-ekle" onclick="navigateTo('section-veteriner-ekle')">
+                <span class="nav-icon">💉</span><span class="nav-label">Veteriner Ekle</span>
+            </div>
+            <div class="nav-item" data-section="section-veteriner-veri" onclick="navigateTo('section-veteriner-veri')">
+                <span class="nav-icon">🏥</span><span class="nav-label">Veteriner Kayıtları</span>
+            </div>
+            <div class="nav-item" data-section="section-kurbanlik-ara" onclick="navigateTo('section-kurbanlik-ara')">
+                <span class="nav-icon">🔎</span><span class="nav-label">Kurbanlık Ara</span>
+            </div>
+            <div class="nav-item" data-section="section-musteri-ara" onclick="navigateTo('section-musteri-ara')">
+                <span class="nav-icon">👤</span><span class="nav-label">Müşteri Ara</span>
+            </div>
+            <div class="nav-item" data-section="section-kurbanlik-cikti" onclick="navigateTo('section-kurbanlik-cikti')">
+                <span class="nav-icon">📄</span><span class="nav-label">Kurbanlık Çıktı</span>
+            </div>
+            <div class="nav-item" data-section="section-rapor" onclick="navigateTo('section-rapor')">
+                <span class="nav-icon">📈</span><span class="nav-label">Rapor</span>
+            </div>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="data-actions">
+                <button class="btn btn-outline btn-sm btn-block" onclick="exportData()">📥 Veri Yedekle</button>
+                <button class="btn btn-outline btn-sm btn-block" onclick="importData()">📤 Geri Yükle</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ========== MOBILE HEADER ========== -->
+    <header class="mobile-header">
+        <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Menü">☰</button>
+        <span class="mobile-title">Kapaklı Mert Besi</span>
+        <span class="mobile-section-indicator" id="mobile-section-indicator">Ana Sayfa</span>
+    </header>
+
+    <!-- ========== OVERLAY ========== -->
+    <div class="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <div id="section-dashboard" class="section active">
+            <h1 class="section-title"><span>📊</span> Genel Bakış</h1>
+
+            <div class="stats-grid">
+                <div class="stat-card" id="stat-toplam-hayvan">
+                    <div class="stat-icon">🐄</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Toplam Hayvan</div>
+                </div>
+                <div class="stat-card" id="stat-aktif">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Aktif</div>
+                </div>
+                <div class="stat-card" id="stat-pasif">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Pasif</div>
+                </div>
+                <div class="stat-card" id="stat-kurbanlik">
+                    <div class="stat-icon">🐂</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Kurbanlık</div>
+                </div>
+                <div class="stat-card" id="stat-satilan-kurbanlik">
+                    <div class="stat-icon">💵</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Satılan Kurbanlık</div>
+                </div>
+                <div class="stat-card" id="stat-kalan-kurbanlik">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Kalan Kurbanlık</div>
+                </div>
+                <div class="stat-card" id="stat-besi">
+                    <div class="stat-icon">🥩</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Besi</div>
+                </div>
+                <div class="stat-card" id="stat-damizlik">
+                    <div class="stat-icon">🐮</div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Damızlık</div>
+                </div>
+                <div class="stat-card" id="stat-toplam-alis">
+                    <div class="stat-icon">💸</div>
+                    <div class="stat-value">0 ₺</div>
+                    <div class="stat-label">Toplam Alış Fiyatı</div>
+                </div>
+                <div class="stat-card" id="stat-toplam-satis">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value">0 ₺</div>
+                    <div class="stat-label">Toplam Satış Fiyatı</div>
+                </div>
+                <div class="stat-card" id="stat-toplam-yem">
+                    <div class="stat-icon">🌾</div>
+                    <div class="stat-value">0 ₺</div>
+                    <div class="stat-label">Toplam Yem Maliyeti</div>
+                </div>
+                <div class="stat-card" id="stat-kar-zarar">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-value">0 ₺</div>
+                    <div class="stat-label">Kâr / Zarar</div>
+                </div>
+            </div>
+
+            <h2 class="section-title" style="font-size:1.3em;">⚡ Hızlı İşlemler</h2>
+            <div class="quick-actions">
+                <div class="quick-action-btn" onclick="navigateTo('section-hayvan-ekle')">
+                    <div class="action-icon">➕</div>
+                    <div class="action-label">Hayvan Ekle</div>
+                </div>
+                <div class="quick-action-btn" onclick="navigateTo('section-hayvan-listesi')">
+                    <div class="action-icon">📋</div>
+                    <div class="action-label">Hayvan Listesi</div>
+                </div>
+                <div class="quick-action-btn" onclick="navigateTo('section-satis-ekle')">
+                    <div class="action-icon">💰</div>
+                    <div class="action-label">Satış Yap</div>
+                </div>
+                <div class="quick-action-btn" onclick="navigateTo('section-yem-ekle')">
+                    <div class="action-icon">🌾</div>
+                    <div class="action-label">Yem Ekle</div>
+                </div>
+                <div class="quick-action-btn" onclick="navigateTo('section-veteriner-ekle')">
+                    <div class="action-icon">💉</div>
+                    <div class="action-label">Veteriner</div>
+                </div>
+                <div class="quick-action-btn" onclick="navigateTo('section-rapor')">
+                    <div class="action-icon">📈</div>
+                    <div class="action-label">Rapor</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== HAYVAN EKLE ===== -->
+        <div id="section-hayvan-ekle" class="section">
+            <h1 class="section-title"><span>➕</span> Yeni Hayvan Ekle</h1>
+            <div class="card">
+                <form id="form-hayvan-ekle" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="he-kupe">Küpe No</label>
+                            <input type="text" id="he-kupe" class="form-input" placeholder="Küpe numarası girin" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-irk">Irk</label>
+                            <select id="he-irk" class="form-select">
+                                <option value="SİMENTAL">SİMENTAL</option>
+                                <option value="MONTOFON">MONTOFON</option>
+                                <option value="SİMENTAL MELEZİ">SİMENTAL MELEZİ</option>
+                                <option value="BELÇİKA MAVİ">BELÇİKA MAVİ</option>
+                                <option value="JERSEY">JERSEY</option>
+                                <option value="JERSEY MELEZİ">JERSEY MELEZİ</option>
+                                <option value="MONTOFON MELEZİ">MONTOFON MELEZİ</option>
+                                <option value="YERLİ MELEZ">YERLİ MELEZ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-padok">Padok</label>
+                            <select id="he-padok" class="form-select">
+                                <option value="PADOK 1">PADOK 1</option>
+                                <option value="PADOK 2">PADOK 2</option>
+                                <option value="PADOK 3">PADOK 3</option>
+                                <option value="PADOK 4">PADOK 4</option>
+                                <option value="PADOK 5">PADOK 5</option>
+                                <option value="PADOK 6">PADOK 6</option>
+                                <option value="TEDAVİ">TEDAVİ</option>
+                                <option value="SAĞIM HANE">SAĞIM HANE</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-cinsiyet">Cinsiyet</label>
+                            <select id="he-cinsiyet" class="form-select">
+                                <option value="ERKEK">ERKEK</option>
+                                <option value="DİŞİ">DİŞİ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-tarih">Alış Tarihi</label>
+                            <input type="date" id="he-tarih" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-dogum">Doğum Tarihi</label>
+                            <input type="date" id="he-dogum" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-kilo">Kilo</label>
+                            <input type="number" id="he-kilo" class="form-input" placeholder="Kilo girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-fiyat">Alış Fiyatı (₺)</label>
+                            <input type="number" id="he-fiyat" class="form-input" placeholder="Alış fiyatı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-durum">Durum</label>
+                            <select id="he-durum" class="form-select">
+                                <option value="KURBANLIK">KURBANLIK</option>
+                                <option value="BESİ">BESİ</option>
+                                <option value="DAMIZLIK">DAMIZLIK</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label class="form-label" for="he-aciklama">Açıklama</label>
+                            <textarea id="he-aciklama" class="form-input" rows="3" placeholder="Ek notlar..."></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" id="btn-hayvan-ekle" class="btn btn-primary btn-block" onclick="addAnimal()">➕ Hayvan Ekle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== HAYVAN LİSTESİ ===== -->
+        <div id="section-hayvan-listesi" class="section">
+            <h1 class="section-title"><span>📋</span> Hayvan Listesi</h1>
+
+            <div class="filter-bar">
+                <input type="text" id="filter-hayvan-listesi" class="form-input" placeholder="🔍 Küpe no, ırk veya padok ile filtrele..." oninput="filterAnimalList()">
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="table-hayvan-listesi">
+                    <thead>
+                        <tr>
+                            <th>Küpe No</th>
+                            <th>Irk</th>
+                            <th>Padok</th>
+                            <th>Cinsiyet</th>
+                            <th>Alış Tarihi</th>
+                            <th>Doğum Tarihi</th>
+                            <th>Kilo</th>
+                            <th>Durum</th>
+                            <th>Satış Durumu</th>
+                            <th>Alış Fiyatı</th>
+                            <th>Açıklama</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== HAYVAN ARA ===== -->
+        <div id="section-hayvan-ara" class="section">
+            <h1 class="section-title"><span>🔍</span> Hayvan Ara</h1>
+
+            <div class="search-box">
+                <input type="text" id="ha-kupe" class="form-input search-input" placeholder="Küpe numarası girin...">
+                <button class="btn btn-primary" onclick="searchAnimal()">🔍 Ara</button>
+            </div>
+
+            <div id="ha-result" class="search-result card hidden">
+                <div class="card-header">Hayvan Bilgileri</div>
+                <div class="result-grid" id="ha-result-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SATIŞ EKLE ===== -->
+        <div id="section-satis-ekle" class="section">
+            <h1 class="section-title"><span>💰</span> Satış İşlemi</h1>
+            <div class="card">
+                <form id="form-satis-ekle" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="se-musteri">Müşteri Adı</label>
+                            <input type="text" id="se-musteri" class="form-input" placeholder="Müşteri adı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="se-kupe">Küpe No</label>
+                            <input type="text" id="se-kupe" class="form-input" placeholder="Küpe numarası girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="se-kilo">Tahmini Kilo</label>
+                            <input type="number" id="se-kilo" class="form-input" placeholder="Tahmini kilo girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="se-fiyat">Satış Fiyatı (₺)</label>
+                            <input type="number" id="se-fiyat" class="form-input" placeholder="Satış fiyatı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="se-alinan">Alınan Para (₺)</label>
+                            <input type="number" id="se-alinan" class="form-input" placeholder="Alınan para miktarı">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="se-hisse">Hisse Adedi (0=Tam Satış)</label>
+                            <input type="number" id="se-hisse" class="form-input" value="0" placeholder="0 = Tam satış">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" id="btn-satis-yap" class="btn btn-success btn-block" onclick="makeSale()">💰 Satışı Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== SATIŞ GEÇMİŞİ (KURBANLIK SATISI) ===== -->
+        <div id="section-kurbanlik-satisi" class="section">
+            <h1 class="section-title"><span>📑</span> Satış Geçmişi</h1>
+
+            <div class="table-container">
+                <table class="data-table" id="table-kurbanlik-satisi">
+                    <thead>
+                        <tr>
+                            <th>Küpe No</th>
+                            <th>Müşteri Adı</th>
+                            <th>Irk</th>
+                            <th>Padok</th>
+                            <th>Cinsiyet</th>
+                            <th>Satış Türü</th>
+                            <th>Tahmini Kilo</th>
+                            <th>Alış Fiyatı</th>
+                            <th>Vet. Gideri</th>
+                            <th>Yem Gideri</th>
+                            <th>Satış Fiyatı</th>
+                            <th>KG Fiyatı</th>
+                            <th>Alınan Toplam</th>
+                            <th>Kalan</th>
+                            <th>Kâr %</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== YEM EKLE ===== -->
+        <div id="section-yem-ekle" class="section">
+            <h1 class="section-title"><span>🌾</span> Yem Alımı Ekle</h1>
+            <div class="card">
+                <form id="form-yem-ekle" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="ye-marka">Yem Markası</label>
+                            <input type="text" id="ye-marka" class="form-input" placeholder="Yem markası girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ye-tur">Yem Türü</label>
+                            <input type="text" id="ye-tur" class="form-input" placeholder="Yem türü girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ye-birim">Birim Fiyat (₺)</label>
+                            <input type="number" id="ye-birim" class="form-input" placeholder="Birim fiyat" oninput="calcFeedTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ye-adet">Yem Adedi</label>
+                            <input type="number" id="ye-adet" class="form-input" placeholder="Adet girin" oninput="calcFeedTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Toplam Fiyat (₺)</label>
+                            <div class="form-input form-readonly"><span id="ye-toplam">0</span> ₺</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ye-tarih">Alım Tarihi</label>
+                            <input type="date" id="ye-tarih" class="form-input">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" id="btn-yem-kaydet" class="btn btn-primary btn-block" onclick="addFeedPurchase()">🌾 Yem Kaydı Ekle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== YEM VERİ ===== -->
+        <div id="section-yem-veri" class="section">
+            <h1 class="section-title"><span>📦</span> Yem Alım Kayıtları</h1>
+
+            <div class="summary-card">
+                <div class="summary-label">Toplam Yem Harcaması</div>
+                <div class="summary-value" id="yem-genel-toplam">0 ₺</div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="table-yem-veri">
+                    <thead>
+                        <tr>
+                            <th>Yem Markası</th>
+                            <th>Yem Türü</th>
+                            <th>Alım Tarihi</th>
+                            <th>Birim Fiyatı</th>
+                            <th>Adeti</th>
+                            <th>Ödenen Fiyat</th>
+                            <th>Toplam Fiyat</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== VETERİNER EKLE ===== -->
+        <div id="section-veteriner-ekle" class="section">
+            <h1 class="section-title"><span>💉</span> Veteriner Gideri Ekle</h1>
+            <div class="card">
+                <form id="form-vet-ekle" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="ve-ad">Veteriner Adı</label>
+                            <input type="text" id="ve-ad" class="form-input" placeholder="Veteriner adı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ve-ilac">Alınan İlaç</label>
+                            <input type="text" id="ve-ilac" class="form-input" placeholder="İlaç adı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ve-adet">Adet</label>
+                            <input type="number" id="ve-adet" class="form-input" placeholder="Adet" oninput="calcVetTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ve-birim">Birim Fiyatı (₺)</label>
+                            <input type="number" id="ve-birim" class="form-input" placeholder="Birim fiyat" oninput="calcVetTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ve-hizmet">Veteriner Hizmeti (₺)</label>
+                            <input type="number" id="ve-hizmet" class="form-input" placeholder="Hizmet ücreti" oninput="calcVetTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Toplam Fiyat (₺)</label>
+                            <div class="form-input form-readonly"><span id="ve-toplam">0</span> ₺</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" id="btn-vet-kaydet" class="btn btn-primary btn-block" onclick="addVetExpense()">💉 Veteriner Kaydı Ekle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== VETERİNER VERİ ===== -->
+        <div id="section-veteriner-veri" class="section">
+            <h1 class="section-title"><span>🏥</span> Veteriner Hizmet Kayıtları</h1>
+
+            <div class="summary-card">
+                <div class="summary-label">Toplam Veteriner Harcaması</div>
+                <div class="summary-value" id="vet-genel-toplam">0 ₺</div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="table-vet-veri">
+                    <thead>
+                        <tr>
+                            <th>Veteriner Adı</th>
+                            <th>Alınan İlaç</th>
+                            <th>Adeti</th>
+                            <th>Birim Fiyatı</th>
+                            <th>Veteriner Hizmeti</th>
+                            <th>Toplam Fiyat</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== KURBANLIK ARA ===== -->
+        <div id="section-kurbanlik-ara" class="section">
+            <h1 class="section-title"><span>🔎</span> Kurbanlık Ara</h1>
+
+            <div class="search-box">
+                <input type="text" id="ka-kupe" class="form-input search-input" placeholder="Kurbanlık küpe numarası girin...">
+                <button class="btn btn-primary" onclick="searchKurbanlik()">🔎 Ara</button>
+            </div>
+
+            <div id="ka-result" class="search-result card hidden">
+                <div class="card-header">Kurbanlık Bilgileri</div>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <span class="result-label">Küpe No</span>
+                        <span class="result-value" id="ka-res-kupe">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Müşteri Adı</span>
+                        <span class="result-value" id="ka-res-musteri">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Cinsiyet</span>
+                        <span class="result-value" id="ka-res-cinsiyet">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Irk</span>
+                        <span class="result-value" id="ka-res-irk">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Doğum Tarihi</span>
+                        <span class="result-value" id="ka-res-dogum">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Satış Durumu</span>
+                        <span class="result-value" id="ka-res-satis">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Padok</span>
+                        <span class="result-value" id="ka-res-padok">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Kilo</span>
+                        <span class="result-value" id="ka-res-kilo">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Açıklama</span>
+                        <span class="result-value" id="ka-res-aciklama">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Satış KG Fiyatı</span>
+                        <span class="result-value" id="ka-res-kgfiyat">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== MÜŞTERİ ARA ===== -->
+        <div id="section-musteri-ara" class="section">
+            <h1 class="section-title"><span>👤</span> Müşteri Ara</h1>
+
+            <div class="search-box">
+                <input type="text" id="ma-musteri" class="form-input search-input" placeholder="Müşteri adı girin...">
+                <button class="btn btn-primary" onclick="searchCustomer()">👤 Ara</button>
+            </div>
+
+            <div id="ma-result" class="hidden">
+                <!-- Populated by JS with customer's animal cards -->
+            </div>
+        </div>
+
+        <!-- ===== KURBANLIK ÇIKTI ===== -->
+        <div id="section-kurbanlik-cikti" class="section">
+            <h1 class="section-title"><span>📄</span> Kurbanlık Çıktı (Hisseli Satış)</h1>
+
+            <div class="table-container">
+                <table class="data-table" id="table-kurbanlik-cikti">
+                    <thead>
+                        <tr>
+                            <th>Küpe No</th>
+                            <th>Müşteri Adı</th>
+                            <th>Irk</th>
+                            <th>Padok No</th>
+                            <th>Satış Fiyatı</th>
+                            <th>Alınan Ücret</th>
+                            <th>Kalan Ücret</th>
+                            <th>Kurbanda Alınan Ücret</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== RAPOR ===== -->
+        <div id="section-rapor" class="section">
+            <h1 class="section-title"><span>📈</span> Detaylı Rapor</h1>
+
+            <!-- Hayvan Dağılımı -->
+            <h2 class="card-header mb-2">🐄 Hayvan Dağılımı</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🐄</div>
+                    <div class="stat-value" id="rapor-toplam-hayvan">0</div>
+                    <div class="stat-label">Toplam Hayvan</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="rapor-aktif">0</div>
+                    <div class="stat-label">Aktif Hayvan</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-value" id="rapor-pasif">0</div>
+                    <div class="stat-label">Pasif (Satılmış)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🐂</div>
+                    <div class="stat-value" id="rapor-kurbanlik">0</div>
+                    <div class="stat-label">Kurbanlık</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🥩</div>
+                    <div class="stat-value" id="rapor-besi">0</div>
+                    <div class="stat-label">Besi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🐮</div>
+                    <div class="stat-value" id="rapor-damizlik">0</div>
+                    <div class="stat-label">Damızlık</div>
+                </div>
+            </div>
+
+            <!-- Mali Özet -->
+            <h2 class="card-header mb-2">💰 Mali Özet</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">💸</div>
+                    <div class="stat-value" id="rapor-toplam-alis">0 ₺</div>
+                    <div class="stat-label">Toplam Alış Fiyatı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value" id="rapor-toplam-satis">0 ₺</div>
+                    <div class="stat-label">Toplam Satış Fiyatı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌾</div>
+                    <div class="stat-value" id="rapor-toplam-yem">0 ₺</div>
+                    <div class="stat-label">Toplam Yem Maliyeti</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💉</div>
+                    <div class="stat-value" id="rapor-toplam-vet">0 ₺</div>
+                    <div class="stat-label">Toplam Veteriner Gideri</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-value" id="rapor-kar-zarar">0 ₺</div>
+                    <div class="stat-label">Kâr / Zarar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="rapor-kar-yuzde">%0</div>
+                    <div class="stat-label">Kâr Yüzdesi</div>
+                </div>
+            </div>
+
+            <!-- Padok Dağılımı -->
+            <h2 class="card-header mb-2">🏠 Padok Dağılımı</h2>
+            <div class="stats-grid" id="rapor-padok-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-value" id="rapor-padok1">0</div>
+                    <div class="stat-label">Padok 1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-value" id="rapor-padok2">0</div>
+                    <div class="stat-label">Padok 2</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-value" id="rapor-padok3">0</div>
+                    <div class="stat-label">Padok 3</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-value" id="rapor-padok4">0</div>
+                    <div class="stat-label">Padok 4</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-value" id="rapor-padok5">0</div>
+                    <div class="stat-label">Padok 5</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-value" id="rapor-padok6">0</div>
+                    <div class="stat-label">Padok 6</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏥</div>
+                    <div class="stat-value" id="rapor-tedavi">0</div>
+                    <div class="stat-label">Tedavi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🥛</div>
+                    <div class="stat-value" id="rapor-sagim">0</div>
+                    <div class="stat-label">Sağım Hane</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div id="toast-container"></div>
+
+<!-- ========== PWA INSTALL BANNER ========== -->
+<div id="pwa-install-banner">
+    <span class="pwa-banner-text">📱 Uygulamayı Ana Ekrana Ekle</span>
+    <div class="pwa-banner-actions">
+        <button class="btn btn-primary btn-sm" onclick="installPWA()">Yükle</button>
+        <button class="btn btn-secondary btn-sm" onclick="dismissPWA()">Kapat</button>
+    </div>
+</div>
+
+<!-- ========== MODAL ========== -->
+<div id="modal" class="modal">
+    <div class="modal-overlay" onclick="closeModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">Onay</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+            <p>Bu işlemi onaylıyor musunuz?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" onclick="closeModal()">İptal</button>
+            <button class="btn btn-danger btn-sm" id="modal-confirm" onclick="confirmModal()">Onayla</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== HIDDEN FILE INPUT FOR IMPORT ========== -->
+<input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="handleImport(event)">
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+
+<script>
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker kayıtlı:', reg.scope))
+                .catch(err => console.log('Service Worker hatası:', err));
+        });
+    }
+</script>
+</body>
+</html>

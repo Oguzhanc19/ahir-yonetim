@@ -1,0 +1,20 @@
+# Analysis scripts (not needed for web app)
+analyze_excel.py
+analyze_drawings.py
+extract_vba.py
+extract_vba2.py
+save_vba.py
+full_analysis.py
+vba_output.txt
+
+# Excel source file
+*.xlsm
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
