@@ -2085,4 +2085,36 @@ function editAdminCredentials(index) {
   showToast("Giriş bilgileriniz başarıyla güncellendi!", "success");
 }
 
+function addNewAdmin() {
+  var newUsername = prompt("Yeni eklenecek yetkilinin ismini girin:");
+  if (newUsername === null) return;
+  newUsername = newUsername.trim().toLowerCase();
+  
+  if (newUsername === '') {
+    showToast("Kullanıcı adı boş olamaz!", "error");
+    return;
+  }
+
+  // Check if someone else already uses this name
+  var existing = appData.users.find(function(u) { return u.user === newUsername; });
+  if (existing) {
+    showToast("Bu isimde bir yetkili zaten mevcut!", "error");
+    return;
+  }
+
+  var newPassword = prompt("Bu yetkili için bir şifre belirleyin:");
+  if (newPassword === null) return;
+  newPassword = newPassword.trim();
+
+  if (newPassword === '') {
+    showToast("Şifre boş olamaz!", "error");
+    return;
+  }
+
+  appData.users.push({ user: newUsername, pass: newPassword });
+  saveData();
+  renderAdminTable();
+  showToast(newUsername + " adlı yetkili başarıyla eklendi!", "success");
+}
+
 
