@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <title>GÜL BESİ LTD ŞT - Ahır Yönetim Sistemi</title>
+    <title>Kapaklı Mert Besi - Ahır Yönetim Sistemi</title>
 </head>
 <body>
 
@@ -20,7 +20,7 @@
     <div id="login-screen" class="login-overlay" style="display: none;">
         <div class="login-card">
             <div style="text-align:center; font-size: 3em; margin-bottom: 10px;">🐄</div>
-            <h2 style="text-align: center; margin-bottom: 20px;">GÜL BESİ LTD ŞT</h2>
+            <h2 style="text-align: center; margin-bottom: 20px;">Kapaklı Mert Besi</h2>
             <div class="form-group">
                 <label class="form-label">Kullanıcı Adı</label>
                 <input type="text" id="login-username" class="form-input" placeholder="İsminizi girin..." autocomplete="off">
@@ -42,7 +42,7 @@
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-logo">
             <span class="logo-icon">🐄</span>
-            <span class="logo-text">GÜL BESİ LTD ŞT</span>
+            <span class="logo-text">Kapaklı Mert Besi</span>
         </div>
 
         <nav class="sidebar-nav">
@@ -111,7 +111,7 @@
     <!-- ========== MOBILE HEADER ========== -->
     <header class="mobile-header">
         <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Menü">☰</button>
-        <span class="mobile-title">GÜL BESİ LTD ŞT</span>
+        <span class="mobile-title">Kapaklı Mert Besi</span>
         <span class="mobile-section-indicator" id="mobile-section-indicator">Ana Sayfa</span>
     </header>
 
@@ -736,7 +736,10 @@
 
         <!-- ===== RAPOR ===== -->
         <div id="section-rapor" class="section">
-            <h1 class="section-title"><span>📈</span> Detaylı Rapor</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>📈</span> Detaylı Rapor</h1>
+                <button class="btn btn-outline" onclick="exportReportToCSV()">📥 Excel İndir</button>
+            </div>
 
             <!-- Hayvan Dağılımı -->
             <h2 class="card-header mb-2">🐄 Hayvan Dağılımı</h2>
@@ -818,6 +821,7 @@
             <h2 class="card-header mb-2 mt-3">🐄 Irk Dağılımı</h2>
             <div class="stats-grid" id="rapor-irk-grid">
                 <!-- JS tarafından doldurulacak -->
+            </div>
         </div>
 
         <!-- ===== ÇOBAN GİDERLERİ ===== -->

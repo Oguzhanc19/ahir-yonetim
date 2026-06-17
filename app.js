@@ -57,20 +57,34 @@ function loadData() {
       renderCobanGiderList();
       updateReport();
 
-      if (!isFirstLoad) {
-          // console.log("Bulut verisi güncellendi!");
+      if (isFirstLoad) {
+        initializeApp();
       }
       isFirstLoad = false;
-    } else {
       // Firebase boşsa localstorage'dan veya varsayılandan al
       const saved = localStorage.getItem('ahirYonetimData');
       if (saved) {
         appData = JSON.parse(saved);
-        saveData(); // Push to Firebase
       } else {
         appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        saveData();
       }
+      
+      // İlk yükleme rutini (UI render ve yedekleme kontrolü)
+      renderAnimalTable();
+      renderCustomerTable();
+      renderSalesTable();
+      renderFeedTable();
+      renderVetTable();
+      renderAdminTable();
+      renderCobanList();
+      renderCobanGiderList();
+      updateReport();
+
+      if (isFirstLoad) {
+        initializeApp();
+      }
+      isFirstLoad = false;
+      saveData(); // Push to Firebase
     }
   });
 }
@@ -1598,12 +1612,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // Veriyi arkaplanda yükle ki login ekranında users hazır olsun
   loadData();
 
-  // Login kontrolü
-  if (!checkLogin()) {
-    return; // Stop initialization until login
-  }
-
-  initializeApp();
+  // Login kontrolü (Eğer login değilse popup açılır)
+  checkLogin();
 });
 
 function initializeApp() {
@@ -2235,6 +2245,39 @@ function exportTableToCSV(tableId, filename) {
   
   var downloadLink = document.createElement("a");
   downloadLink.download = filename;
+  downloadLink.href = window.URL.createObjectURL(csvFile);
+  downloadLink.style.display = "none";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
+
+function exportReportToCSV() {
+  var csv = [];
+  csv.push('Kapakli Mert Besi - Detayli Rapor');
+  csv.push('Tarih;' + new Date().toLocaleDateString('tr-TR'));
+  csv.push('');
+  
+  csv.push('Hayvan Dagilimi');
+  csv.push('Toplam Hayvan;' + document.getElementById('rapor-toplam-hayvan').innerText);
+  csv.push('Aktif Hayvan;' + document.getElementById('rapor-aktif').innerText);
+  csv.push('Pasif (Satilmis);' + document.getElementById('rapor-pasif').innerText);
+  csv.push('Kurbanlik;' + document.getElementById('rapor-kurbanlik').innerText);
+  csv.push('Besi;' + document.getElementById('rapor-besi').innerText);
+  csv.push('Damizlik;' + document.getElementById('rapor-damizlik').innerText);
+  csv.push('');
+  
+  csv.push('Mali Ozet');
+  csv.push('Toplam Alis Fiyati;' + document.getElementById('rapor-toplam-alis').innerText.replace('₺', '').trim());
+  csv.push('Toplam Satis Fiyati;' + document.getElementById('rapor-toplam-satis').innerText.replace('₺', '').trim());
+  csv.push('Toplam Yem Maliyeti;' + document.getElementById('rapor-toplam-yem').innerText.replace('₺', '').trim());
+  csv.push('Toplam Veteriner Gideri;' + document.getElementById('rapor-toplam-vet').innerText.replace('₺', '').trim());
+  csv.push('Kar / Zarar;' + document.getElementById('rapor-kar-zarar').innerText.replace('₺', '').trim());
+  csv.push('Kar Yuzdesi;' + document.getElementById('rapor-kar-yuzde').innerText);
+  
+  var csvFile = new Blob(["\uFEFF" + csv.join('\n')], { type: "text/csv;charset=utf-8;" });
+  var downloadLink = document.createElement("a");
+  downloadLink.download = 'Detayli_Rapor.csv';
   downloadLink.href = window.URL.createObjectURL(csvFile);
   downloadLink.style.display = "none";
   document.body.appendChild(downloadLink);
