@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ahir-yonetim-v1';
+const CACHE_NAME = 'ahir-yonetim-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -30,36 +30,28 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch - cache first, then network
+// Fetch - Network first, fallback to cache
 self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
   
-  // Skip Google Fonts (always fetch from network)
-  if (event.request.url.includes('fonts.googleapis.com') || event.request.url.includes('fonts.gstatic.com')) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache =>
-        fetch(event.request).then(response => {
-          cache.put(event.request, response.clone());
-          return response;
-        }).catch(() => caches.match(event.request))
-      )
-    );
+  // Skip Firebase requests
+  if (event.request.url.includes('firebaseio.com') || event.request.url.includes('googleapis.com')) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // Cache successful responses
-        if (response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => {
-        // Offline fallback
+    fetch(event.request).then(response => {
+      // Network successful, cache the new response
+      if (response && response.status === 200) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      }
+      return response;
+    }).catch(() => {
+      // Network failed, fallback to cache
+      return caches.match(event.request).then(cached => {
+        if (cached) return cached;
         if (event.request.destination === 'document') {
           return caches.match('./index.html');
         }

@@ -1349,16 +1349,16 @@ function updateVetToplam() {
 function exportData() {
   try {
     var dataStr = JSON.stringify(appData, null, 2);
-    var blob = new Blob([dataStr], { type: 'application/json' });
+    var blob = new Blob([dataStr], { type: 'text/plain' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'ahir_yedek_' + getTodayStr() + '.json';
+    a.download = 'ahir_yedek_' + getTodayStr() + '.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('Veri yedeği indirildi.', 'info');
+    showToast('Veri yedeği (txt) indirildi.', 'info');
   } catch (err) {
     showToast('Dışa aktarma hatası: ' + err.message, 'error');
   }
@@ -1367,7 +1367,7 @@ function exportData() {
 function importData() {
   var input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.json';
+  input.accept = '.json, .txt';
 
   input.onchange = function(e) {
     var file = e.target.files[0];
