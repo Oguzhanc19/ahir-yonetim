@@ -91,6 +91,9 @@
             <div class="nav-item" data-section="section-rapor" onclick="navigateTo('section-rapor')">
                 <span class="nav-icon">📈</span><span class="nav-label">Rapor</span>
             </div>
+            <div class="nav-item" data-section="section-coban" onclick="navigateTo('section-coban')">
+                <span class="nav-icon">🧑‍🌾</span><span class="nav-label">Çoban Giderleri</span>
+            </div>
             <div class="nav-item" data-section="section-admin" onclick="navigateTo('section-admin')">
                 <span class="nav-icon">👑</span><span class="nav-label">Yetkililer</span>
             </div>
@@ -212,7 +215,7 @@
         <!-- ===== HAYVAN EKLE ===== -->
         <div id="section-hayvan-ekle" class="section">
             <h1 class="section-title"><span>➕</span> Yeni Hayvan Ekle</h1>
-            <div class="card">
+            <div class="card admin-only">
                 <form id="form-hayvan-ekle" onsubmit="return false;">
                     <div class="form-grid">
                         <div class="form-group">
@@ -290,7 +293,10 @@
 
         <!-- ===== HAYVAN LİSTESİ ===== -->
         <div id="section-hayvan-listesi" class="section">
-            <h1 class="section-title"><span>📋</span> Hayvan Listesi</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>📋</span> Hayvan Listesi</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-hayvan-listesi', 'Hayvan_Listesi.csv')">📥 Excel İndir</button>
+            </div>
 
             <div class="stats-grid" id="hayvan-listesi-ozet">
                 <div class="stat-card">
@@ -309,7 +315,7 @@
 
             <div class="filter-bar" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
                 <input type="text" id="filter-hayvan-listesi" class="form-input" placeholder="🔍 Küpe no, ırk veya padok ile filtrele..." oninput="renderAnimalTable()" style="flex:1; min-width: 250px;">
-                <button class="btn btn-danger" onclick="deleteSelected('animals')">🗑️ Seçilenleri Sil</button>
+                <button class="btn btn-danger admin-only" onclick="deleteSelected('animals')">🗑️ Seçilenleri Sil</button>
             </div>
 
             <div class="table-container">
@@ -356,12 +362,16 @@
         <!-- ===== SATIŞ EKLE ===== -->
         <div id="section-satis-ekle" class="section">
             <h1 class="section-title"><span>💰</span> Satış İşlemi</h1>
-            <div class="card">
+            <div class="card admin-only">
                 <form id="form-satis-ekle" onsubmit="return false;">
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="se-musteri">Müşteri Adı</label>
                             <input type="text" id="se-musteri" class="form-input" placeholder="Müşteri adı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="se-telefon">Müşteri Telefon No</label>
+                            <input type="tel" id="se-telefon" class="form-input" placeholder="05XX XXX XX XX">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="se-kupe">Küpe No</label>
@@ -393,7 +403,10 @@
 
         <!-- ===== SATIŞ GEÇMİŞİ (KURBANLIK SATISI) ===== -->
         <div id="section-kurbanlik-satisi" class="section">
-            <h1 class="section-title"><span>📑</span> Satış Geçmişi</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>📑</span> Satış Geçmişi</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-kurbanlik-satisi', 'Satis_Gecmisi.csv')">📥 Excel İndir</button>
+            </div>
 
             <div class="stats-grid" id="satis-gecmisi-ozet">
                 <div class="stat-card">
@@ -415,7 +428,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
-                <button class="btn btn-danger" onclick="deleteSelected('sales')">🗑️ Seçilenleri Sil</button>
+                <button class="btn btn-danger admin-only" onclick="deleteSelected('sales')">🗑️ Seçilenleri Sil</button>
             </div>
 
             <div class="table-container">
@@ -447,7 +460,10 @@
 
         <!-- ===== MÜŞTERİ LİSTESİ ===== -->
         <div id="section-musteri-listesi" class="section">
-            <h1 class="section-title"><span>👥</span> Müşteri Listesi</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>👥</span> Müşteri Listesi</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-musteri-listesi', 'Musteri_Listesi.csv')">📥 Excel İndir</button>
+            </div>
 
             <div class="stats-grid" id="musteri-ozet">
                 <div class="stat-card">
@@ -473,7 +489,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
-                <button class="btn btn-danger" onclick="deleteSelectedCustomers()">🗑️ Seçilenleri Sil</button>
+                <button class="btn btn-danger admin-only" onclick="deleteSelectedCustomers()">🗑️ Seçilenleri Sil</button>
             </div>
 
             <div class="table-container">
@@ -497,7 +513,7 @@
         <!-- ===== YEM EKLE ===== -->
         <div id="section-yem-ekle" class="section">
             <h1 class="section-title"><span>🌾</span> Yem Alımı Ekle</h1>
-            <div class="card">
+            <div class="card admin-only">
                 <form id="form-yem-ekle" onsubmit="return false;">
                     <div class="form-grid">
                         <div class="form-group">
@@ -534,7 +550,10 @@
 
         <!-- ===== YEM VERİ ===== -->
         <div id="section-yem-veri" class="section">
-            <h1 class="section-title"><span>📦</span> Yem Alım Kayıtları</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>📦</span> Yem Alım Kayıtları</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-yem-veri', 'Yem_Kayitlari.csv')">📥 Excel İndir</button>
+            </div>
 
             <div class="summary-card">
                 <div class="summary-label">Toplam Yem Harcaması</div>
@@ -542,7 +561,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
-                <button class="btn btn-danger" onclick="deleteSelected('feeds')">🗑️ Seçilenleri Sil</button>
+                <button class="btn btn-danger admin-only" onclick="deleteSelected('feeds')">🗑️ Seçilenleri Sil</button>
             </div>
 
             <div class="table-container">
@@ -567,7 +586,7 @@
         <!-- ===== VETERİNER EKLE ===== -->
         <div id="section-veteriner-ekle" class="section">
             <h1 class="section-title"><span>💉</span> Veteriner Gideri Ekle</h1>
-            <div class="card">
+            <div class="card admin-only">
                 <form id="form-vet-ekle" onsubmit="return false;">
                     <div class="form-grid">
                         <div class="form-group">
@@ -604,7 +623,10 @@
 
         <!-- ===== VETERİNER VERİ ===== -->
         <div id="section-veteriner-veri" class="section">
-            <h1 class="section-title"><span>🏥</span> Veteriner Hizmet Kayıtları</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>🏥</span> Veteriner Hizmet Kayıtları</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-vet-veri', 'Veteriner_Kayitlari.csv')">📥 Excel İndir</button>
+            </div>
 
             <div class="summary-card">
                 <div class="summary-label">Toplam Veteriner Harcaması</div>
@@ -612,7 +634,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; margin-bottom: 12px;">
-                <button class="btn btn-danger" onclick="deleteSelected('vets')">🗑️ Seçilenleri Sil</button>
+                <button class="btn btn-danger admin-only" onclick="deleteSelected('vets')">🗑️ Seçilenleri Sil</button>
             </div>
 
             <div class="table-container">
@@ -796,6 +818,103 @@
             <h2 class="card-header mb-2 mt-3">🐄 Irk Dağılımı</h2>
             <div class="stats-grid" id="rapor-irk-grid">
                 <!-- JS tarafından doldurulacak -->
+        </div>
+
+        <!-- ===== ÇOBAN GİDERLERİ ===== -->
+        <div id="section-coban" class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>🧑‍🌾</span> Çoban Giderleri</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-coban-giderleri', 'Coban_Giderleri.csv')">📥 Excel İndir</button>
+            </div>
+
+            <div class="card admin-only">
+                <div class="card-header">Yeni Çoban veya Gider Ekle</div>
+                <div class="tabs" style="margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="document.getElementById('coban-ekle-form').style.display='block'; document.getElementById('coban-gider-form').style.display='none';">Çoban Ekle</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('coban-ekle-form').style.display='none'; document.getElementById('coban-gider-form').style.display='block';">Gider/Maaş Ekle</button>
+                </div>
+                
+                <!-- Çoban Ekle Formu -->
+                <form id="coban-ekle-form" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="ce-isim">Çoban Adı Soyadı</label>
+                            <input type="text" id="ce-isim" class="form-input" placeholder="Ad Soyad">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ce-yas">Yaşı</label>
+                            <input type="number" id="ce-yas" class="form-input" placeholder="Örn: 35">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ce-maas">Aylık Ücreti (₺)</label>
+                            <input type="number" id="ce-maas" class="form-input" placeholder="Örn: 15000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ce-gorev">Görevi / Açıklama</label>
+                            <input type="text" id="ce-gorev" class="form-input" placeholder="Örn: Sürü Yöneticisi">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-success" onclick="addCoban()">➕ Çoban Ekle</button>
+                    </div>
+                </form>
+
+                <!-- Çoban Gider Formu -->
+                <form id="coban-gider-form" onsubmit="return false;" style="display:none;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="cg-coban">Çoban Seç</label>
+                            <select id="cg-coban" class="form-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="cg-tutar">Ödenen Tutar (₺)</label>
+                            <input type="number" id="cg-tutar" class="form-input" placeholder="Miktar girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="cg-tarih">Ödeme Tarihi</label>
+                            <input type="date" id="cg-tarih" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="cg-aciklama">Açıklama</label>
+                            <input type="text" id="cg-aciklama" class="form-input" placeholder="Örn: Şubat Maaşı / Avans">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-success" onclick="addCobanGider()">💰 Ödeme Kaydet</button>
+                    </div>
+                </form>
+            </div>
+
+            <h2 class="card-header mt-3 mb-2">Kayıtlı Çobanlar</h2>
+            <div class="table-container mb-3">
+                <table class="data-table" id="table-coban-listesi">
+                    <thead>
+                        <tr>
+                            <th>İsim Soyisim</th>
+                            <th>Yaş</th>
+                            <th>Görev</th>
+                            <th>Aylık Ücret</th>
+                            <th class="admin-only">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <h2 class="card-header mt-3 mb-2">Gider ve Maaş Ödemeleri Geçmişi</h2>
+            <div class="table-container">
+                <table class="data-table" id="table-coban-giderleri">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Çoban</th>
+                            <th>Açıklama</th>
+                            <th>Ödenen Tutar</th>
+                            <th class="admin-only">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
 
@@ -905,7 +1024,7 @@
                     </div>
                     <div class="mt-3" style="display: flex; gap: 12px; justify-content: flex-end;">
                         <button type="button" class="btn btn-secondary" onclick="closeEditModal()">İptal</button>
-                        <button type="button" class="btn btn-primary" onclick="saveAnimalEdit()">💾 Kaydet</button>
+                        <button type="button" class="btn btn-primary admin-only" onclick="saveAnimalEdit()">💾 Kaydet</button>
                     </div>
                 </form>
             </div>

@@ -40,6 +40,8 @@ function loadData() {
       if (!appData.users) {
         appData.users = JSON.parse(JSON.stringify(DEFAULT_DATA.users));
       }
+      if (!appData.shepherds) appData.shepherds = [];
+      if (!appData.shepherdExpenses) appData.shepherdExpenses = [];
 
       // Local storage backup
       localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
@@ -51,6 +53,8 @@ function loadData() {
       renderFeedTable();
       renderVetTable();
       renderAdminTable();
+      renderCobanList();
+      renderCobanGiderList();
       updateReport();
 
       if (!isFirstLoad) {
@@ -72,6 +76,12 @@ function loadData() {
 }
 
 function saveData() {
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    showToast('Misafir hesaplar değişiklik yapamaz!', 'error');
+    return;
+  }
+
   try {
     db.ref('ahirData').set(appData);
     localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
@@ -146,6 +156,10 @@ function refreshSection(sectionId) {
       break;
     case 'section-kurbanlik-cikti':
       renderKurbanlikCiktiTable();
+      break;
+    case 'section-coban':
+      renderCobanList();
+      renderCobanGiderList();
       break;
     case 'section-rapor':
       updateReport();
@@ -277,6 +291,7 @@ function addAnimal() {
 // ==========================================
 function makeSale() {
   var musteriAdi = (document.getElementById('se-musteri')?.value || '').trim();
+  var musteriTel = (document.getElementById('se-telefon')?.value || '').trim();
   var kupeNo = (document.getElementById('se-kupe')?.value || '').trim();
   var tahminiKilo = parseFloat(document.getElementById('se-kilo')?.value) || 0;
   var satisFiyati = parseFloat(document.getElementById('se-fiyat')?.value) || 0;
@@ -338,6 +353,7 @@ function makeSale() {
   appData.sales.push({
     kupeNo: kupeNo,
     musteriAdi: musteriAdi,
+    musteriTel: musteriTel,
     irk: animal.irk,
     padok: animal.padok,
     cinsiyet: animal.cinsiyet,
@@ -1003,6 +1019,7 @@ function updateDashboard() {
   var toplamSatis = sales.reduce(function(s, sale) { return s + (sale.satisFiyati || 0); }, 0) + kCiktiSatis;
   var toplamYem = feeds.reduce(function(s, f) { return s + (f.odenenFiyat || 0); }, 0);
   var toplamVet = vets.reduce(function(s, v) { return s + (v.toplamFiyat || 0); }, 0);
+  var toplamCoban = (appData.shepherdExpenses || []).reduce(function(s, c) { return s + (c.tutar || 0); }, 0);
 
   // Sadece satılan hayvanların alış fiyatlarının toplamı
   var satilanKupelar = sales.map(function(s) { return s.kupeNo; }).concat(kCikti.map(function(k) { return k.kupeNo; }));
@@ -1010,7 +1027,7 @@ function updateDashboard() {
     return satilanKupelar.includes(a.kupeNo);
   }).reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
 
-  var karZarar = toplamSatis - satilanAlis - toplamYem - toplamVet;
+  var karZarar = toplamSatis - satilanAlis - toplamYem - toplamVet - toplamCoban;
 
   // DOM güncellemeleri
   setText('stat-toplam-hayvan', animals.length);
@@ -1505,6 +1522,15 @@ function checkLogin() {
   if (session === 'true') {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
+    
+    // Guest modu kontrolü
+    const role = localStorage.getItem('ahirUserRole');
+    if (role === 'guest') {
+      document.body.classList.add('guest-mode');
+    } else {
+      document.body.classList.remove('guest-mode');
+    }
+    
     return true;
   } else {
     document.getElementById('login-screen').style.display = 'flex';
@@ -1524,11 +1550,19 @@ function attemptLogin() {
       return;
   }
 
-  const isValid = appData.users.some(function(u) { return u.user === user && u.pass === pass; });
+  const validUser = appData.users.find(function(u) { return u.user === user && u.pass === pass; });
 
-  if (isValid) {
+  if (validUser) {
     localStorage.setItem('ahirSessionActive', 'true');
     localStorage.setItem('ahirCurrentUser', user);
+    localStorage.setItem('ahirUserRole', validUser.role || 'admin'); // Varsayılan admin
+    
+    if ((validUser.role || 'admin') === 'guest') {
+      document.body.classList.add('guest-mode');
+    } else {
+      document.body.classList.remove('guest-mode');
+    }
+    
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
     errorEl.style.display = 'none';
@@ -1910,7 +1944,11 @@ function renderCustomerTable() {
     var name = (s.musteriAdi || '').trim();
     if (!name) return;
     if (!customers[name]) {
-      customers[name] = { ad: name, hayvanCount: 0, hisseCount: 0, alisveris: 0, odenen: 0 };
+      customers[name] = { ad: name, telefon: s.musteriTel || '-', hayvanCount: 0, hisseCount: 0, alisveris: 0, odenen: 0 };
+    }
+    // Eger sonradan telefon eklendiyse ve oncekinde yoksa guncelle
+    if (s.musteriTel && customers[name].telefon === '-') {
+      customers[name].telefon = s.musteriTel;
     }
     
     var isHisse = s.satisTuru && s.satisTuru.includes('Hisse');
@@ -1956,11 +1994,12 @@ function renderCustomerTable() {
     html += '<tr>';
     html += '<td data-label="Seç"><input type="checkbox" value="' + escapeHtml(c.ad) + '"></td>';
     html += '<td data-label="Müşteri Adı" class="font-bold">' + escapeHtml(c.ad) + '</td>';
+    html += '<td data-label="Telefon No">' + escapeHtml(c.telefon || '-') + '</td>';
     html += '<td data-label="Satın Aldığı">' + escapeHtml(aldigiText) + '</td>';
     html += '<td data-label="Toplam Alışveriş">' + formatMoney(c.alisveris) + '</td>';
     html += '<td data-label="Ödenen Tutar">' + formatMoney(c.odenen) + '</td>';
     html += '<td data-label="Kalan Borç" class="font-bold ' + (kalan > 0 ? 'text-danger' : 'text-success') + '">' + formatMoney(kalan) + '</td>';
-    html += '<td data-label="İşlem"><button class="btn btn-sm btn-outline" onclick="editCustomerName(\'' + escapeHtml(c.ad).replace(/'/g, "\\'") + '\')">✏️ Adını Değiştir</button></td>';
+    html += '<td data-label="İşlem" class="admin-only"><button class="btn btn-sm btn-outline" onclick="editCustomerName(\'' + escapeHtml(c.ad).replace(/'/g, "\\'") + '\')">✏️ Adını Değiştir</button></td>';
     html += '</tr>';
   });
 
@@ -2068,8 +2107,9 @@ function renderAdminTable() {
 
   (appData.users || []).forEach(function(u, index) {
     var isMe = (u.user === currentUser);
+    var roleText = (u.role === 'guest') ? '<span class="badge badge-warning">Misafir</span>' : '<span class="badge badge-success">Admin</span>';
     html += '<tr>';
-    html += '<td data-label="Kullanıcı Adı" class="font-bold">' + escapeHtml(u.user) + (isMe ? ' <span style="color:var(--color-primary-light); font-size:0.8em;">(Siz)</span>' : '') + '</td>';
+    html += '<td data-label="Kullanıcı Adı" class="font-bold">' + escapeHtml(u.user) + ' ' + roleText + (isMe ? ' <span style="color:var(--color-primary-light); font-size:0.8em;">(Siz)</span>' : '') + '</td>';
     html += '<td data-label="Şifre">' + (isMe ? escapeHtml(u.pass) : '••••••••') + '</td>';
     html += '<td data-label="İşlem">';
     if (isMe) {
@@ -2126,6 +2166,12 @@ function editAdminCredentials(index) {
 }
 
 function addNewAdmin() {
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    showToast('Misafir hesaplar yeni yetkili ekleyemez!', 'error');
+    return;
+  }
+
   var newUsername = prompt("Yeni eklenecek yetkilinin ismini girin:");
   if (newUsername === null) return;
   newUsername = newUsername.trim().toLowerCase();
@@ -2151,10 +2197,191 @@ function addNewAdmin() {
     return;
   }
 
-  appData.users.push({ user: newUsername, pass: newPassword });
+  var roleInput = prompt("Bu kişinin rolü ne olacak?\n1: Yetkili (Admin)\n2: Misafir (Sadece Okuma)", "1");
+  if (roleInput === null) return;
+  var newRole = (roleInput === "2") ? "guest" : "admin";
+
+  appData.users.push({ user: newUsername, pass: newPassword, role: newRole });
   saveData();
   renderAdminTable();
-  showToast(newUsername + " adlı yetkili başarıyla eklendi!", "success");
+  showToast(newUsername + " adlı kullanıcı başarıyla eklendi!", "success");}
+
+// ==========================================
+// EXCEL / CSV DIŞA AKTARIM
+// ==========================================
+function exportTableToCSV(tableId, filename) {
+  var table = document.getElementById(tableId);
+  if (!table) return;
+  var rows = table.querySelectorAll('tr');
+  var csv = [];
+  
+  for (var i = 0; i < rows.length; i++) {
+    var row = [], cols = rows[i].querySelectorAll('td, th');
+    
+    for (var j = 0; j < cols.length; j++) {
+      // Çekmece/Checkbox sütunu ve İşlem sütununu atla
+      var text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, ' ').trim();
+      if (text === 'İşlem' || cols[j].querySelector('input[type="checkbox"]') || cols[j].classList.contains('admin-only')) {
+        continue;
+      }
+      // Excel uyumluluğu için tırnak içine al
+      row.push('"' + text.replace(/"/g, '""') + '"');
+    }
+    if (row.length > 0) csv.push(row.join(';'));
+  }
+
+  // Türkçe karakter (UTF-8 BOM) uyumluluğu
+  var csvFile = new Blob(["\uFEFF" + csv.join('\n')], { type: "text/csv;charset=utf-8;" });
+  
+  var downloadLink = document.createElement("a");
+  downloadLink.download = filename;
+  downloadLink.href = window.URL.createObjectURL(csvFile);
+  downloadLink.style.display = "none";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
 }
 
+// ==========================================
+// ÇOBAN GİDERLERİ YÖNETİMİ
+// ==========================================
+function addCoban() {
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    showToast('Misafir hesaplar çoban ekleyemez!', 'error');
+    return;
+  }
 
+  var isim = (document.getElementById('ce-isim')?.value || '').trim();
+  var yas = document.getElementById('ce-yas')?.value || '';
+  var maas = parseFloat(document.getElementById('ce-maas')?.value) || 0;
+  var gorev = (document.getElementById('ce-gorev')?.value || '').trim();
+
+  if (!isim) {
+    showToast('Lütfen çoban adı girin!', 'error');
+    return;
+  }
+
+  appData.shepherds.push({
+    id: Date.now().toString(),
+    isim: isim,
+    yas: yas,
+    maas: maas,
+    gorev: gorev
+  });
+
+  saveData();
+  renderCobanList();
+  
+  document.getElementById('coban-ekle-form').reset();
+  showToast('Çoban başarıyla eklendi.', 'success');
+}
+
+function addCobanGider() {
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    showToast('Misafir hesaplar gider ekleyemez!', 'error');
+    return;
+  }
+
+  var cobanId = document.getElementById('cg-coban')?.value;
+  var tutar = parseFloat(document.getElementById('cg-tutar')?.value) || 0;
+  var tarih = document.getElementById('cg-tarih')?.value || getTodayStr();
+  var aciklama = (document.getElementById('cg-aciklama')?.value || '').trim();
+
+  if (!cobanId || tutar <= 0) {
+    showToast('Lütfen geçerli bir çoban seçin ve tutar girin!', 'error');
+    return;
+  }
+
+  appData.shepherdExpenses.push({
+    id: Date.now().toString(),
+    cobanId: cobanId,
+    tutar: tutar,
+    tarih: tarih,
+    aciklama: aciklama
+  });
+
+  saveData();
+  renderCobanGiderList();
+  updateReport(); // Gideri genel toplama yansıtmak için
+  
+  document.getElementById('coban-gider-form').reset();
+  document.getElementById('cg-tarih').value = getTodayStr();
+  showToast('Ödeme başarıyla kaydedildi.', 'success');
+}
+
+function renderCobanList() {
+  var tbody = document.querySelector('#table-coban-listesi tbody');
+  var select = document.getElementById('cg-coban');
+  if (!tbody || !select) return;
+
+  var html = '';
+  var options = '<option value="">-- Çoban Seçin --</option>';
+
+  (appData.shepherds || []).forEach(function(c, i) {
+    html += '<tr>';
+    html += '<td data-label="İsim Soyisim" class="font-bold">' + escapeHtml(c.isim) + '</td>';
+    html += '<td data-label="Yaş">' + escapeHtml(c.yas || '-') + '</td>';
+    html += '<td data-label="Görev">' + escapeHtml(c.gorev || '-') + '</td>';
+    html += '<td data-label="Aylık Ücret">' + formatMoney(c.maas) + '</td>';
+    html += '<td data-label="İşlem" class="admin-only"><button class="btn btn-sm btn-danger" onclick="deleteCoban(' + i + ')">🗑️ Sil</button></td>';
+    html += '</tr>';
+
+    options += '<option value="' + c.id + '">' + escapeHtml(c.isim) + '</option>';
+  });
+
+  if ((appData.shepherds || []).length === 0) {
+    html = '<tr><td colspan="5" class="text-center">Kayıtlı çoban bulunamadı</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+  select.innerHTML = options;
+}
+
+function deleteCoban(index) {
+  if (confirm('Bu çobanı silmek istediğinize emin misiniz?')) {
+    appData.shepherds.splice(index, 1);
+    saveData();
+    renderCobanList();
+  }
+}
+
+function renderCobanGiderList() {
+  var tbody = document.querySelector('#table-coban-giderleri tbody');
+  if (!tbody) return;
+
+  var html = '';
+  
+  // Ters sırala (en yeni en üstte)
+  var expenses = (appData.shepherdExpenses || []).slice().reverse();
+
+  expenses.forEach(function(g, reverseIndex) {
+    var realIndex = (appData.shepherdExpenses.length - 1) - reverseIndex;
+    var coban = (appData.shepherds || []).find(function(c) { return c.id === g.cobanId; });
+    var cobanIsim = coban ? coban.isim : 'Silinmiş Çoban';
+
+    html += '<tr>';
+    html += '<td data-label="Tarih">' + formatDate(g.tarih) + '</td>';
+    html += '<td data-label="Çoban" class="font-bold">' + escapeHtml(cobanIsim) + '</td>';
+    html += '<td data-label="Açıklama">' + escapeHtml(g.aciklama || '-') + '</td>';
+    html += '<td data-label="Ödenen Tutar">' + formatMoney(g.tutar) + '</td>';
+    html += '<td data-label="İşlem" class="admin-only"><button class="btn btn-sm btn-danger" onclick="deleteCobanGider(' + realIndex + ')">🗑️ Sil</button></td>';
+    html += '</tr>';
+  });
+
+  if (expenses.length === 0) {
+    html = '<tr><td colspan="5" class="text-center">Ödeme geçmişi bulunamadı</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+}
+
+function deleteCobanGider(index) {
+  if (confirm('Bu ödeme kaydını silmek istediğinize emin misiniz?')) {
+    appData.shepherdExpenses.splice(index, 1);
+    saveData();
+    renderCobanGiderList();
+    updateReport();
+  }
+}
