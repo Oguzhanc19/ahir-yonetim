@@ -88,6 +88,18 @@
             <div class="nav-item" data-section="section-kurbanlik-cikti" onclick="navigateTo('section-kurbanlik-cikti')">
                 <span class="nav-icon">📄</span><span class="nav-label">Kurbanlık Çıktı</span>
             </div>
+
+            <!-- SAĞLIK & ÜREME -->
+            <div style="margin: 15px 0 5px 15px; font-size: 0.8em; color: var(--color-text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">SAĞLIK & ÜREME</div>
+            <div class="nav-item" data-section="section-asi" onclick="navigateTo('section-asi')">
+                <span class="nav-icon">💉</span><span class="nav-label">Aşı Takvimi</span>
+            </div>
+            <div class="nav-item" data-section="section-gebelik" onclick="navigateTo('section-gebelik')">
+                <span class="nav-icon">🤰</span><span class="nav-label">Gebelik Takibi</span>
+            </div>
+
+            <!-- RAPORLAR -->
+            <div style="margin: 15px 0 5px 15px; font-size: 0.8em; color: var(--color-text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">RAPORLAR</div>
             <div class="nav-item" data-section="section-rapor" onclick="navigateTo('section-rapor')">
                 <span class="nav-icon">📈</span><span class="nav-label">Rapor</span>
             </div>
@@ -777,7 +789,7 @@
             </div>
 
             <!-- Mali Özet -->
-            <h2 class="card-header mb-2">💰 Mali Özet</h2>
+            <h2 class="card-header mb-2 mt-3">💰 Mali Özet</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">💸</div>
@@ -800,6 +812,11 @@
                     <div class="stat-label">Toplam Veteriner Gideri</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-icon">🧑‍🌾</div>
+                    <div class="stat-value" id="rapor-toplam-coban">0 ₺</div>
+                    <div class="stat-label">Toplam Çoban Gideri</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-icon">📈</div>
                     <div class="stat-value" id="rapor-kar-zarar">0 ₺</div>
                     <div class="stat-label">Kâr / Zarar</div>
@@ -808,6 +825,26 @@
                     <div class="stat-icon">📊</div>
                     <div class="stat-value" id="rapor-kar-yuzde">%0</div>
                     <div class="stat-label">Kâr Yüzdesi</div>
+                </div>
+            </div>
+
+            <!-- Sağlık & Üreme Özet -->
+            <h2 class="card-header mb-2 mt-3">🏥 Sağlık & Üreme Özet</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">💉</div>
+                    <div class="stat-value" id="rapor-toplam-asi">0</div>
+                    <div class="stat-label">Toplam Yapılan Aşı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🤰</div>
+                    <div class="stat-value" id="rapor-aktif-gebe">0</div>
+                    <div class="stat-label">Aktif Gebe Hayvan</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🍼</div>
+                    <div class="stat-value" id="rapor-doguran">0</div>
+                    <div class="stat-label">Doğuran Hayvan</div>
                 </div>
             </div>
 
@@ -829,6 +866,25 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h1 class="section-title" style="margin-bottom: 0;"><span>🧑‍🌾</span> Çoban Giderleri</h1>
                 <button class="btn btn-outline" onclick="exportTableToCSV('table-coban-giderleri', 'Coban_Giderleri.csv')">📥 Excel İndir</button>
+            </div>
+
+            <!-- Çoban Giderleri Özet -->
+            <div class="stats-grid mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon">🧑‍🌾</div>
+                    <div class="stat-value" id="coban-toplam-sayi">0</div>
+                    <div class="stat-label">Aktif Çoban Sayısı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💵</div>
+                    <div class="stat-value" id="coban-aylik-maas">0 ₺</div>
+                    <div class="stat-label">Aylık Toplam Maaş</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💸</div>
+                    <div class="stat-value" id="coban-toplam-gider">0 ₺</div>
+                    <div class="stat-label">Bugüne Kadar Ödenen</div>
+                </div>
             </div>
 
             <div class="card admin-only">
@@ -914,6 +970,111 @@
                             <th>Çoban</th>
                             <th>Açıklama</th>
                             <th>Ödenen Tutar</th>
+                            <th class="admin-only">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+
+        <!-- ===== AŞI TAKVİMİ ===== -->
+        <div id="section-asi" class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>💉</span> Aşı Takvimi</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-asi', 'Asi_Takvimi.csv')">📥 Excel İndir</button>
+            </div>
+            
+            <div class="card admin-only mb-3">
+                <div class="card-header">Yeni Aşı Kaydı Ekle</div>
+                <form id="form-asi-ekle" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Küpe No</label>
+                            <input type="text" id="asi-kupe" class="form-input" placeholder="Hayvan Küpe No">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Aşı Adı</label>
+                            <input type="text" id="asi-ad" class="form-input" placeholder="Örn: Şap, Çiçek">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Uygulama Tarihi</label>
+                            <input type="date" id="asi-tarih" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tekrar Tarihi (Opsiyonel)</label>
+                            <input type="date" id="asi-tekrar" class="form-input">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label class="form-label">Açıklama</label>
+                            <input type="text" id="asi-aciklama" class="form-input" placeholder="Veteriner notu vb.">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addVaccine()">➕ Aşıyı Kaydet</button>
+                </form>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table" id="table-asi">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Küpe No</th>
+                            <th>Aşı Adı</th>
+                            <th>Tekrar Tarihi</th>
+                            <th>Açıklama</th>
+                            <th class="admin-only">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== GEBELİK TAKİBİ ===== -->
+        <div id="section-gebelik" class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 class="section-title" style="margin-bottom: 0;"><span>🤰</span> Gebelik Takibi</h1>
+                <button class="btn btn-outline" onclick="exportTableToCSV('table-gebelik', 'Gebelik_Takibi.csv')">📥 Excel İndir</button>
+            </div>
+            
+            <div class="card admin-only mb-3">
+                <div class="card-header">Yeni Gebelik Kaydı (Tohumlama) Ekle</div>
+                <form id="form-gebelik-ekle" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Anne Küpe No</label>
+                            <input type="text" id="gebelik-kupe" class="form-input" placeholder="Dişi Hayvan Küpe No">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tohumlama Tarihi</label>
+                            <input type="date" id="gebelik-tarih" class="form-input" onchange="suggestBirthDate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Boğa / Irk</label>
+                            <input type="text" id="gebelik-boga" class="form-input" placeholder="Tohumlanan Boğa Irkı">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tahmini Doğum Tarihi</label>
+                            <input type="date" id="gebelik-dogum" class="form-input">
+                            <small class="form-hint" style="color:var(--color-text-muted); font-size:0.8em;">İnekler için ortalama 283 gün hesaplanır</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addPregnancy()">➕ Kaydet</button>
+                </form>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table" id="table-gebelik">
+                    <thead>
+                        <tr>
+                            <th>Küpe No</th>
+                            <th>Tohumlama Tarihi</th>
+                            <th>Boğa / Irk</th>
+                            <th>Tahmini Doğum</th>
+                            <th>Kalan Süre</th>
+                            <th>Durum</th>
                             <th class="admin-only">İşlem</th>
                         </tr>
                     </thead>

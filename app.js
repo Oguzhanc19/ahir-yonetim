@@ -42,6 +42,8 @@ function loadData() {
       }
       if (!appData.shepherds) appData.shepherds = [];
       if (!appData.shepherdExpenses) appData.shepherdExpenses = [];
+      if (!appData.vaccines) appData.vaccines = [];
+      if (!appData.pregnancies) appData.pregnancies = [];
 
       // Local storage backup
       localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
@@ -55,6 +57,8 @@ function loadData() {
       renderAdminTable();
       renderCobanList();
       renderCobanGiderList();
+      renderVaccineList();
+      renderPregnancyList();
       updateReport();
 
       if (isFirstLoad) {
@@ -78,6 +82,8 @@ function loadData() {
       renderAdminTable();
       renderCobanList();
       renderCobanGiderList();
+      renderVaccineList();
+      renderPregnancyList();
       updateReport();
 
       if (isFirstLoad) {
@@ -1090,12 +1096,15 @@ function updateReport() {
   var toplamVet = vets.reduce(function(s, v) { return s + (v.toplamFiyat || 0); }, 0);
 
   var satilanKupelar = sales.map(function(s) { return s.kupeNo; }).concat(kCikti.map(function(k) { return k.kupeNo; }));
+  var toplamCoban = (appData.shepherdExpenses || []).reduce(function(s, c) { return s + (c.tutar || 0); }, 0);
+
+  var satilanKupelar = sales.map(function(s) { return s.kupeNo; }).concat(kCikti.map(function(k) { return k.kupeNo; }));
   var satilanAlis = animals.filter(function(a) {
     return satilanKupelar.includes(a.kupeNo);
   }).reduce(function(s, a) { return s + (a.alisFiyati || 0); }, 0);
 
-  var karZarar = toplamSatis - satilanAlis - toplamYem - toplamVet;
-  var toplamMaliyet = satilanAlis + toplamYem + toplamVet;
+  var karZarar = toplamSatis - satilanAlis - toplamYem - toplamVet - toplamCoban;
+  var toplamMaliyet = satilanAlis + toplamYem + toplamVet + toplamCoban;
 
   setText('rapor-toplam-hayvan', animals.length);
   setText('rapor-aktif', aktif);
@@ -1107,6 +1116,7 @@ function updateReport() {
   setText('rapor-toplam-satis', formatMoney(toplamSatis));
   setText('rapor-toplam-yem', formatMoney(toplamYem));
   setText('rapor-toplam-vet', formatMoney(toplamVet));
+  setText('rapor-toplam-coban', formatMoney(toplamCoban));
   setText('rapor-kar-zarar', formatMoney(karZarar));
   
   var karYuzdesi = 0;
@@ -1123,6 +1133,17 @@ function updateReport() {
   if (yuzdeEl) {
     yuzdeEl.style.color = karZarar >= 0 ? '#10b981' : '#ef4444';
   }
+
+  // Sağlık ve Üreme
+  var vaccines = appData.vaccines || [];
+  var pregnancies = appData.pregnancies || [];
+  
+  var aktifGebe = pregnancies.filter(function(p) { return p.durum === 'Gebe'; }).length;
+  var doguran = pregnancies.filter(function(p) { return p.durum === 'Doğurdu'; }).length;
+
+  setText('rapor-toplam-asi', vaccines.length);
+  setText('rapor-aktif-gebe', aktifGebe);
+  setText('rapor-doguran', doguran);
 
   // Ek rapor detayları - Padok bazlı dağılım
   var padokStats = {};
@@ -2272,8 +2293,15 @@ function exportReportToCSV() {
   csv.push('Toplam Satis Fiyati;' + document.getElementById('rapor-toplam-satis').innerText.replace('₺', '').trim());
   csv.push('Toplam Yem Maliyeti;' + document.getElementById('rapor-toplam-yem').innerText.replace('₺', '').trim());
   csv.push('Toplam Veteriner Gideri;' + document.getElementById('rapor-toplam-vet').innerText.replace('₺', '').trim());
+  csv.push('Toplam Coban Gideri;' + document.getElementById('rapor-toplam-coban').innerText.replace('₺', '').trim());
   csv.push('Kar / Zarar;' + document.getElementById('rapor-kar-zarar').innerText.replace('₺', '').trim());
   csv.push('Kar Yuzdesi;' + document.getElementById('rapor-kar-yuzde').innerText);
+  csv.push('');
+  
+  csv.push('Saglik ve Ureme');
+  csv.push('Toplam Yapilan Asi;' + document.getElementById('rapor-toplam-asi').innerText);
+  csv.push('Aktif Gebe Hayvan;' + document.getElementById('rapor-aktif-gebe').innerText);
+  csv.push('Doguran Hayvan;' + document.getElementById('rapor-doguran').innerText);
   
   var csvFile = new Blob(["\uFEFF" + csv.join('\n')], { type: "text/csv;charset=utf-8;" });
   var downloadLink = document.createElement("a");
@@ -2283,6 +2311,226 @@ function exportReportToCSV() {
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
+}
+
+// ==========================================
+// AŞI TAKVİMİ YÖNETİMİ
+// ==========================================
+function addVaccine() {
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    showToast('Misafir hesaplar aşı ekleyemez!', 'error');
+    return;
+  }
+
+  var kupeNo = (document.getElementById('asi-kupe')?.value || '').trim();
+  var ad = (document.getElementById('asi-ad')?.value || '').trim();
+  var tarih = document.getElementById('asi-tarih')?.value || '';
+  var tekrar = document.getElementById('asi-tekrar')?.value || '';
+  var aciklama = (document.getElementById('asi-aciklama')?.value || '').trim();
+
+  if (!kupeNo || !ad || !tarih) {
+    showToast('Küpe No, Aşı Adı ve Tarih zorunludur!', 'error');
+    return;
+  }
+
+  appData.vaccines.push({
+    kupeNo: kupeNo,
+    ad: ad,
+    tarih: tarih,
+    tekrar: tekrar,
+    aciklama: aciklama
+  });
+
+  saveData();
+  renderVaccineList();
+  updateReport();
+
+  document.getElementById('asi-kupe').value = '';
+  document.getElementById('asi-ad').value = '';
+  document.getElementById('asi-tarih').value = '';
+  document.getElementById('asi-tekrar').value = '';
+  document.getElementById('asi-aciklama').value = '';
+  showToast('Aşı kaydı eklendi', 'success');
+}
+
+function renderVaccineList() {
+  var tbody = document.querySelector('#table-asi tbody');
+  if (!tbody) return;
+
+  var html = '';
+  var list = (appData.vaccines || []).slice().reverse();
+
+  list.forEach(function(v, reverseIndex) {
+    var realIndex = (appData.vaccines.length - 1) - reverseIndex;
+    
+    // Tekrar tarihi yaklaşanlara renk ver
+    var tekrarRenk = '';
+    if (v.tekrar) {
+      var d = new Date(v.tekrar);
+      var now = new Date();
+      var diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+      if (diff < 0) tekrarRenk = 'color: var(--color-danger); font-weight: bold;';
+      else if (diff <= 7) tekrarRenk = 'color: var(--color-warning); font-weight: bold;';
+    }
+
+    html += '<tr>';
+    html += '<td data-label="Tarih">' + formatDate(v.tarih) + '</td>';
+    html += '<td data-label="Küpe No" class="font-bold">' + escapeHtml(v.kupeNo) + '</td>';
+    html += '<td data-label="Aşı Adı">' + escapeHtml(v.ad) + '</td>';
+    html += '<td data-label="Tekrar Tarihi" style="' + tekrarRenk + '">' + (v.tekrar ? formatDate(v.tekrar) : '-') + '</td>';
+    html += '<td data-label="Açıklama">' + escapeHtml(v.aciklama || '-') + '</td>';
+    html += '<td data-label="İşlem" class="admin-only"><button class="btn btn-sm btn-danger" onclick="deleteVaccine(' + realIndex + ')">🗑️</button></td>';
+    html += '</tr>';
+  });
+
+  if (list.length === 0) {
+    html = '<tr><td colspan="6" class="text-center">Aşı kaydı bulunamadı</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+}
+
+function deleteVaccine(index) {
+  if (confirm('Bu aşı kaydını silmek istediğinize emin misiniz?')) {
+    appData.vaccines.splice(index, 1);
+    saveData();
+    renderVaccineList();
+    updateReport();
+  }
+}
+
+// ==========================================
+// GEBELİK TAKİBİ YÖNETİMİ
+// ==========================================
+function suggestBirthDate() {
+  var tTarih = document.getElementById('gebelik-tarih')?.value;
+  if (tTarih) {
+    var d = new Date(tTarih);
+    d.setDate(d.getDate() + 283); // Ortalama 283 gün
+    var yyyy = d.getFullYear();
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    document.getElementById('gebelik-dogum').value = yyyy + '-' + mm + '-' + dd;
+  }
+}
+
+function addPregnancy() {
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    showToast('Misafir hesaplar gebelik ekleyemez!', 'error');
+    return;
+  }
+
+  var kupeNo = (document.getElementById('gebelik-kupe')?.value || '').trim();
+  var tarih = document.getElementById('gebelik-tarih')?.value || '';
+  var boga = (document.getElementById('gebelik-boga')?.value || '').trim();
+  var dogum = document.getElementById('gebelik-dogum')?.value || '';
+
+  if (!kupeNo || !tarih || !dogum) {
+    showToast('Küpe No, Tohumlama Tarihi ve Tahmini Doğum Tarihi zorunludur!', 'error');
+    return;
+  }
+
+  appData.pregnancies.push({
+    kupeNo: kupeNo,
+    tarih: tarih,
+    boga: boga,
+    dogum: dogum,
+    durum: 'Gebe'
+  });
+
+  saveData();
+  renderPregnancyList();
+  updateReport();
+
+  document.getElementById('gebelik-kupe').value = '';
+  document.getElementById('gebelik-tarih').value = '';
+  document.getElementById('gebelik-boga').value = '';
+  document.getElementById('gebelik-dogum').value = '';
+  showToast('Gebelik kaydı eklendi', 'success');
+}
+
+function renderPregnancyList() {
+  var tbody = document.querySelector('#table-gebelik tbody');
+  if (!tbody) return;
+
+  var html = '';
+  var list = (appData.pregnancies || []).slice().reverse();
+
+  list.forEach(function(p, reverseIndex) {
+    var realIndex = (appData.pregnancies.length - 1) - reverseIndex;
+    
+    var kalanSure = '-';
+    var kalanRenk = '';
+    if (p.durum === 'Gebe' && p.dogum) {
+      var d = new Date(p.dogum);
+      var now = new Date();
+      var diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+      
+      if (diff < 0) {
+        kalanSure = Math.abs(diff) + ' gün geçti';
+        kalanRenk = 'color: var(--color-danger); font-weight: bold;';
+      } else {
+        kalanSure = diff + ' gün kaldı';
+        if (diff <= 15) kalanRenk = 'color: var(--color-warning); font-weight: bold;';
+        else kalanRenk = 'color: var(--color-success); font-weight: bold;';
+      }
+    }
+
+    var durumClass = '';
+    if (p.durum === 'Gebe') durumClass = 'badge-success';
+    else if (p.durum === 'Doğurdu') durumClass = 'badge-primary';
+    else durumClass = 'badge-danger';
+
+    html += '<tr>';
+    html += '<td data-label="Küpe No" class="font-bold">' + escapeHtml(p.kupeNo) + '</td>';
+    html += '<td data-label="Tohumlama Tarihi">' + formatDate(p.tarih) + '</td>';
+    html += '<td data-label="Boğa / Irk">' + escapeHtml(p.boga || '-') + '</td>';
+    html += '<td data-label="Tahmini Doğum">' + formatDate(p.dogum) + '</td>';
+    html += '<td data-label="Kalan Süre" style="' + kalanRenk + '">' + kalanSure + '</td>';
+    html += '<td data-label="Durum" class="admin-only"><select onchange="updatePregnancyStatus(' + realIndex + ', this.value)" class="form-input" style="padding: 2px 5px; height: auto;">';
+    html += '<option value="Gebe" ' + (p.durum === 'Gebe' ? 'selected' : '') + '>Gebe</option>';
+    html += '<option value="Doğurdu" ' + (p.durum === 'Doğurdu' ? 'selected' : '') + '>Doğurdu</option>';
+    html += '<option value="Yavru Attı" ' + (p.durum === 'Yavru Attı' ? 'selected' : '') + '>Yavru Attı</option>';
+    html += '</select></td>';
+    
+    // Mobil/Misafir görünümü için durum text'i
+    html += '<td data-label="Durum" style="display:none;" class="guest-only"><span class="badge ' + durumClass + '">' + p.durum + '</span></td>';
+
+    html += '<td data-label="İşlem" class="admin-only"><button class="btn btn-sm btn-danger" onclick="deletePregnancy(' + realIndex + ')">🗑️</button></td>';
+    html += '</tr>';
+  });
+
+  if (list.length === 0) {
+    html = '<tr><td colspan="7" class="text-center">Gebelik kaydı bulunamadı</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+  
+  // Style düzenlemeleri (admin / guest only sınıflarını tabloya özel işletmek için)
+  const role = localStorage.getItem('ahirUserRole');
+  if (role === 'guest') {
+    tbody.querySelectorAll('.guest-only').forEach(el => el.style.display = 'table-cell');
+  }
+}
+
+function updatePregnancyStatus(index, status) {
+  if (appData.pregnancies[index]) {
+    appData.pregnancies[index].durum = status;
+    saveData();
+    renderPregnancyList();
+    updateReport();
+  }
+}
+
+function deletePregnancy(index) {
+  if (confirm('Bu gebelik kaydını silmek istediğinize emin misiniz?')) {
+    appData.pregnancies.splice(index, 1);
+    saveData();
+    renderPregnancyList();
+    updateReport();
+  }
 }
 
 // ==========================================
@@ -2398,10 +2646,13 @@ function renderCobanGiderList() {
   
   // Ters sırala (en yeni en üstte)
   var expenses = (appData.shepherdExpenses || []).slice().reverse();
+  var shepherds = appData.shepherds || [];
 
+  var toplamGider = 0;
   expenses.forEach(function(g, reverseIndex) {
+    toplamGider += (parseFloat(g.tutar) || 0);
     var realIndex = (appData.shepherdExpenses.length - 1) - reverseIndex;
-    var coban = (appData.shepherds || []).find(function(c) { return c.id === g.cobanId; });
+    var coban = shepherds.find(function(c) { return c.id === g.cobanId; });
     var cobanIsim = coban ? coban.isim : 'Silinmiş Çoban';
 
     html += '<tr>';
@@ -2418,6 +2669,12 @@ function renderCobanGiderList() {
   }
 
   tbody.innerHTML = html;
+
+  // Özet kartlarını güncelle
+  var toplamMaas = shepherds.reduce(function(s, c) { return s + (parseFloat(c.maas) || 0); }, 0);
+  setText('coban-toplam-sayi', shepherds.length);
+  setText('coban-aylik-maas', formatMoney(toplamMaas));
+  setText('coban-toplam-gider', formatMoney(toplamGider));
 }
 
 function deleteCobanGider(index) {
