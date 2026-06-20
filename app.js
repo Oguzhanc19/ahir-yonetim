@@ -249,6 +249,9 @@ function addAnimal() {
   var alisFiyati = parseFloat(document.getElementById('he-fiyat')?.value) || 0;
   var durum = document.getElementById('he-durum')?.value || '';
   var aciklama = document.getElementById('he-aciklama')?.value || '';
+  
+  var fotoSrc = document.getElementById('he-foto-preview')?.src || '';
+  var fotoData = fotoSrc.startsWith('data:image') ? fotoSrc : null;
 
   // Doğrulama
   if (!kupeNo) {
@@ -291,13 +294,31 @@ function addAnimal() {
     durum: durum,
     satisDurumu: 'STOKTA',
     alisFiyati: alisFiyati,
-    aciklama: aciklama
+    aciklama: aciklama,
+    foto: fotoData
   });
 
   saveData();
   showToast(kupeNo + ' numaralı hayvan başarıyla eklendi.');
 
   // Formu temizle
+  document.getElementById('he-kupe').value = '';
+  document.getElementById('he-irk').value = 'SİMENTAL';
+  document.getElementById('he-padok').value = 'PADOK 1';
+  document.getElementById('he-cinsiyet').value = 'ERKEK';
+  document.getElementById('he-alis-tarihi').value = getTodayStr();
+  document.getElementById('he-dogum-tarihi').value = '';
+  document.getElementById('he-kilo').value = '';
+  document.getElementById('he-alis-fiyati').value = '';
+  document.getElementById('he-durum').value = 'BESİ';
+  document.getElementById('he-aciklama').value = '';
+  
+  if (document.getElementById('he-foto')) document.getElementById('he-foto').value = '';
+  if (document.getElementById('he-foto-preview')) {
+    document.getElementById('he-foto-preview').src = '';
+    document.getElementById('he-foto-preview').style.display = 'none';
+  }
+
   var form = document.getElementById('form-hayvan-ekle');
   if (form) form.reset();
 
@@ -548,9 +569,11 @@ function searchAnimal() {
 
   if (animal) {
     var salesHtml = getSalesHtml(kupeNo);
+    var fotoHtml = animal.foto ? '<div style="text-align:center; margin-bottom:15px;"><img src="' + animal.foto + '" style="max-width:200px; max-height:200px; border-radius:8px; object-fit:cover; box-shadow:0 2px 8px rgba(0,0,0,0.2);"></div>' : '';
     resultDiv.innerHTML =
       '<div class="card">' +
         '<div class="card-header">🐄 Hayvan Bilgileri - ' + escapeHtml(animal.kupeNo) + '</div>' +
+        fotoHtml +
         '<div class="result-grid">' +
           '<div class="result-item"><span class="result-label">Irk</span><span class="result-value">' + escapeHtml(animal.irk) + '</span></div>' +
           '<div class="result-item"><span class="result-label">Cinsiyet</span><span class="result-value">' + escapeHtml(animal.cinsiyet) + '</span></div>' +
@@ -648,10 +671,12 @@ function searchKurbanlik() {
   if (animal || sale) {
     var data = animal || sale;
     var salesHtml = getSalesHtml(kupeNo);
+    var fotoHtml = (animal && animal.foto) ? '<div style="text-align:center; margin-bottom:15px;"><img src="' + animal.foto + '" style="max-width:200px; max-height:200px; border-radius:8px; object-fit:cover; box-shadow:0 2px 8px rgba(0,0,0,0.2);"></div>' : '';
 
     resultDiv.innerHTML =
       '<div class="card">' +
         '<div class="card-header">🔎 Kurbanlık Bilgileri - ' + escapeHtml(kupeNo) + '</div>' +
+        fotoHtml +
         '<div class="result-grid">' +
           '<div class="result-item"><span class="result-label">Küpe No</span><span class="result-value">' + escapeHtml(kupeNo) + '</span></div>' +
           '<div class="result-item"><span class="result-label">Cinsiyet</span><span class="result-value">' + escapeHtml(data.cinsiyet || '-') + '</span></div>' +
@@ -1296,6 +1321,18 @@ function openEditModal(index) {
   document.getElementById('edit-satis-durumu').value = animal.satisDurumu || 'STOKTA';
   document.getElementById('edit-aciklama').value = animal.aciklama || '';
   
+  if (document.getElementById('edit-foto')) document.getElementById('edit-foto').value = '';
+  var editPreview = document.getElementById('edit-foto-preview');
+  if (editPreview) {
+    if (animal.foto) {
+      editPreview.src = animal.foto;
+      editPreview.style.display = 'block';
+    } else {
+      editPreview.src = '';
+      editPreview.style.display = 'none';
+    }
+  }
+
   var modal = document.getElementById('edit-modal');
   if (modal) modal.classList.add('show');
 }
@@ -1338,6 +1375,13 @@ function saveAnimalEdit() {
   animal.durum = document.getElementById('edit-durum').value;
   animal.satisDurumu = document.getElementById('edit-satis-durumu').value;
   animal.aciklama = document.getElementById('edit-aciklama').value;
+  
+  var fotoSrc = document.getElementById('edit-foto-preview')?.src || '';
+  if (fotoSrc.startsWith('data:image')) {
+    animal.foto = fotoSrc;
+  } else if (!fotoSrc || fotoSrc === '') {
+    animal.foto = null;
+  }
   
   saveData();
   renderAnimalTable();
@@ -2683,5 +2727,47 @@ function deleteCobanGider(index) {
     saveData();
     renderCobanGiderList();
     updateReport();
+  }
+}
+
+// ==========================================
+// FOTOĞRAF YÜKLEME VE SIKIŞTIRMA
+// ==========================================
+function previewPhoto(input, imgId) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    if (!file.type.match('image.*')) {
+      showToast('Lütfen geçerli bir resim dosyası seçin!', 'error');
+      input.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        var MAX_WIDTH = 800;
+        var MAX_HEIGHT = 800;
+        var width = img.width;
+        var height = img.height;
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        var previewImg = document.getElementById(imgId);
+        if (previewImg) { previewImg.src = dataUrl; previewImg.style.display = 'block'; }
+      }
+      img.src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+  } else {
+    var previewImg = document.getElementById(imgId);
+    if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
   }
 }

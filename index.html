@@ -42,7 +42,7 @@
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-logo">
             <span class="logo-icon">🐄</span>
-            <span class="logo-text">Kapaklı Mert Besi</span>
+            <span class="logo-text">Kapaklı Mert Besi <span style="font-size: 0.6em; opacity: 0.8; vertical-align: super; background: var(--color-primary); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">V3</span></span>
         </div>
 
         <nav class="sidebar-nav">
@@ -123,8 +123,8 @@
     <!-- ========== MOBILE HEADER ========== -->
     <header class="mobile-header">
         <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Menü">☰</button>
-        <span class="mobile-title">Kapaklı Mert Besi</span>
-        <span class="mobile-section-indicator" id="mobile-section-indicator">Ana Sayfa</span>
+        <span class="mobile-title">Kapaklı Mert Besi <span style="font-size: 0.6em; opacity: 0.8; vertical-align: super; background: var(--color-primary); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">V3</span></span>
+        <span class="mobile-section-indicator" id="mobile-section-indicator" onclick="navigateTo('section-dashboard')" style="cursor: pointer;">Ana Sayfa</span>
     </header>
 
     <!-- ========== OVERLAY ========== -->
@@ -233,6 +233,11 @@
                         <div class="form-group">
                             <label class="form-label" for="he-kupe">Küpe No</label>
                             <input type="text" id="he-kupe" class="form-input" placeholder="Küpe numarası girin" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="he-foto">Hayvan Fotoğrafı (İsteğe Bağlı)</label>
+                            <input type="file" id="he-foto" class="form-input" accept="image/*" capture="environment" onchange="previewPhoto(this, 'he-foto-preview')">
+                            <img id="he-foto-preview" style="display:none; max-width: 100%; max-height: 150px; margin-top: 10px; border-radius: 8px; object-fit: cover;">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="he-irk">Irk</label>
@@ -1114,6 +1119,11 @@
                         <div class="form-group">
                             <label class="form-label" for="edit-kupe">Küpe No</label>
                             <input type="text" id="edit-kupe" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-foto">Hayvan Fotoğrafı Güncelle (İsteğe Bağlı)</label>
+                            <input type="file" id="edit-foto" class="form-input" accept="image/*" capture="environment" onchange="previewPhoto(this, 'edit-foto-preview')">
+                            <img id="edit-foto-preview" style="display:none; max-width: 100%; max-height: 150px; margin-top: 10px; border-radius: 8px; object-fit: cover;">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="edit-irk">Irk</label>
