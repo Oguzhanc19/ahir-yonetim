@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // ALİ AHIR - AHIR YÖNETİM SİSTEMİ
 // Tam Uygulama Mantığı (app.js)
 // ==========================================
@@ -1975,6 +1975,32 @@ function renderAlerts() {
     });
   }
 
+  var yakinDogumlar = [];
+  var now = new Date();
+  (appData.pregnancies || []).forEach(function(p) {
+    if (p.durum === 'Gebe' && p.dogum) {
+      var birthDate = new Date(p.dogum);
+      var diff = (birthDate - now) / (1000 * 60 * 60 * 24);
+      if (diff <= 7 && diff >= -30) {
+        var remainingDays = Math.ceil(diff);
+        if (remainingDays < 0) {
+          yakinDogumlar.push(escapeHtml(p.kupeNo) + ' (Doğum gecikti: ' + Math.abs(remainingDays) + ' gün)');
+        } else if (remainingDays === 0) {
+          yakinDogumlar.push(escapeHtml(p.kupeNo) + ' (Doğum bugün veya yarın)');
+        } else {
+          yakinDogumlar.push(escapeHtml(p.kupeNo) + ' (' + remainingDays + ' gün kaldı)');
+        }
+      }
+    }
+  });
+  if (yakinDogumlar.length > 0) {
+    var detay = yakinDogumlar.join('<br>');
+    alerts.push({ 
+      icon: '🐄', 
+      text: '<details><summary style="cursor:pointer; font-weight:bold;">' + yakinDogumlar.length + ' adet hayvanın doğumu yaklaştı veya gecikti!</summary><div style="margin-top:8px; font-size:0.9em; opacity:0.9;">' + detay + '</div></details>', 
+      color: 'var(--color-warning)' 
+    });
+  }
   if (alerts.length === 0) {
     list.innerHTML = '<li style="color:var(--color-success); text-align:center; padding: 12px;">✅ Tüm sistem harika görünüyor! Uyarı yok.</li>';
     return;
@@ -2771,3 +2797,4 @@ function previewPhoto(input, imgId) {
     if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
   }
 }
+
