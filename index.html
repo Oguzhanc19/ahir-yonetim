@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -367,7 +367,7 @@
             <h1 class="section-title"><span>🔍</span> Hayvan Ara</h1>
 
             <div class="search-box">
-                <input type="text" id="ha-kupe" class="form-input search-input" placeholder="Küpe numarası girin...">
+                <input type="text" id="ha-kupe" class="form-input search-input" list="kupe-list" placeholder="Küpe numarası girin...">
                 <button class="btn btn-primary" onclick="searchAnimal()">🔍 Ara</button>
             </div>
 
@@ -395,7 +395,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="se-kupe">Küpe No</label>
-                            <input type="text" id="se-kupe" class="form-input" placeholder="Küpe numarası girin">
+                            <input type="text" id="se-kupe" class="form-input" list="kupe-list" placeholder="Küpe numarası girin">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="se-kilo">Tahmini Kilo</label>
@@ -680,7 +680,7 @@
             <h1 class="section-title"><span>🔎</span> Kurbanlık Ara</h1>
 
             <div class="search-box">
-                <input type="text" id="ka-kupe" class="form-input search-input" placeholder="Kurbanlık küpe numarası girin...">
+                <input type="text" id="ka-kupe" class="form-input search-input" list="kupe-list" placeholder="Kurbanlık küpe numarası girin...">
                 <button class="btn btn-primary" onclick="searchKurbanlik()">🔎 Ara</button>
             </div>
 
@@ -999,7 +999,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Küpe No</label>
-                            <input type="text" id="asi-kupe" class="form-input" placeholder="Hayvan Küpe No">
+                            <input type="text" id="asi-kupe" class="form-input" list="kupe-list" placeholder="Hayvan Küpe No">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Aşı Adı</label>
@@ -1052,7 +1052,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Anne Küpe No</label>
-                            <input type="text" id="gebelik-kupe" class="form-input" placeholder="Dişi Hayvan Küpe No">
+                            <input type="text" id="gebelik-kupe" class="form-input" list="kupe-list" placeholder="Dişi Hayvan Küpe No">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Tohumlama Tarihi</label>
@@ -1262,5 +1262,8 @@
         });
     }
 </script>
+
+<datalist id="kupe-list"></datalist>
 </body>
 </html>
+

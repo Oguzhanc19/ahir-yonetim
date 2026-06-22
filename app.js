@@ -1100,6 +1100,7 @@ function updateDashboard() {
   // Görevleri ve Uyarıları Güncelle
   if (typeof renderTodos === 'function') renderTodos();
   if (typeof renderAlerts === 'function') renderAlerts();
+  if (typeof updateKupeList === 'function') updateKupeList();
 }
 
 function updateReport() {
@@ -2821,4 +2822,15 @@ function removePhoto(inputId, imgId, removeBtnId) {
   
   var removeBtn = document.getElementById(removeBtnId);
   if (removeBtn) removeBtn.style.display = 'none';
+}
+
+function updateKupeList() {
+  var dataList = document.getElementById('kupe-list');
+  if (!dataList) return;
+  var html = '';
+  var sortedAnimals = [...(appData.animals || [])].sort((a, b) => a.kupeNo.localeCompare(b.kupeNo, undefined, {numeric: true, sensitivity: 'base'}));
+  sortedAnimals.forEach(function(a) {
+    html += '<option value="' + escapeHtml(a.kupeNo) + '">';
+  });
+  dataList.innerHTML = html;
 }
