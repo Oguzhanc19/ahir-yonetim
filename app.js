@@ -2762,9 +2762,10 @@ function deleteCobanGider(index) {
 }
 
 // ==========================================
-// FOTOĞRAF YÜKLEME VE SIKIŞTIRMA
 // ==========================================
-function previewPhoto(input, imgId) {
+// FOTOĞRAF YÜKLEME, SIKIŞTIRMA VE SİLME
+// ==========================================
+function previewPhoto(input, imgId, removeBtnId) {
   if (input.files && input.files[0]) {
     var file = input.files[0];
     if (!file.type.match('image.*')) {
@@ -2778,8 +2779,8 @@ function previewPhoto(input, imgId) {
       img.onload = function() {
         var canvas = document.createElement('canvas');
         var ctx = canvas.getContext('2d');
-        var MAX_WIDTH = 800;
-        var MAX_HEIGHT = 800;
+        var MAX_WIDTH = 400;
+        var MAX_HEIGHT = 400;
         var width = img.width;
         var height = img.height;
         if (width > height) {
@@ -2790,9 +2791,13 @@ function previewPhoto(input, imgId) {
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.4);
         var previewImg = document.getElementById(imgId);
         if (previewImg) { previewImg.src = dataUrl; previewImg.style.display = 'block'; }
+        if (removeBtnId) {
+          var removeBtn = document.getElementById(removeBtnId);
+          if (removeBtn) removeBtn.style.display = 'block';
+        }
       }
       img.src = e.target.result;
     }
@@ -2800,11 +2805,20 @@ function previewPhoto(input, imgId) {
   } else {
     var previewImg = document.getElementById(imgId);
     if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
+    if (removeBtnId) {
+      var removeBtn = document.getElementById(removeBtnId);
+      if (removeBtn) removeBtn.style.display = 'none';
+    }
   }
 }
 
-
-
-
-
-
+function removePhoto(inputId, imgId, removeBtnId) {
+  var input = document.getElementById(inputId);
+  if (input) input.value = '';
+  
+  var previewImg = document.getElementById(imgId);
+  if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
+  
+  var removeBtn = document.getElementById(removeBtnId);
+  if (removeBtn) removeBtn.style.display = 'none';
+}
