@@ -251,7 +251,7 @@ function addAnimal() {
   var aciklama = document.getElementById('he-aciklama')?.value || '';
   
   var fotoSrc = document.getElementById('he-foto-preview')?.src || '';
-  var fotoData = fotoSrc.startsWith('data:image') ? fotoSrc : null;
+  var fotoData = (fotoSrc.startsWith('data:image') && document.getElementById('he-foto-preview').style.display !== 'none') ? fotoSrc : null;
 
   // Doğrulama
   if (!kupeNo) {
@@ -317,6 +317,9 @@ function addAnimal() {
   if (document.getElementById('he-foto-preview')) {
     document.getElementById('he-foto-preview').src = '';
     document.getElementById('he-foto-preview').style.display = 'none';
+  }
+  if (document.getElementById('he-foto-remove')) {
+    document.getElementById('he-foto-remove').style.display = 'none';
   }
 
   var form = document.getElementById('form-hayvan-ekle');
@@ -1327,9 +1330,11 @@ function openEditModal(index) {
     if (animal.foto) {
       editPreview.src = animal.foto;
       editPreview.style.display = 'block';
+      if (document.getElementById('edit-foto-remove')) document.getElementById('edit-foto-remove').style.display = 'block';
     } else {
       editPreview.src = '';
       editPreview.style.display = 'none';
+      if (document.getElementById('edit-foto-remove')) document.getElementById('edit-foto-remove').style.display = 'none';
     }
   }
 
@@ -1379,7 +1384,7 @@ function saveAnimalEdit() {
   var fotoSrc = document.getElementById('edit-foto-preview')?.src || '';
   if (fotoSrc.startsWith('data:image')) {
     animal.foto = fotoSrc;
-  } else if (!fotoSrc || fotoSrc === '') {
+  } else if (!fotoSrc || fotoSrc === '' || document.getElementById('edit-foto-preview').style.display === 'none') {
     animal.foto = null;
   }
   
@@ -2797,4 +2802,9 @@ function previewPhoto(input, imgId) {
     if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
   }
 }
+
+
+
+
+
 
