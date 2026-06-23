@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // ALİ AHIR - AHIR YÖNETİM SİSTEMİ
 // Tam Uygulama Mantığı (app.js)
 // ==========================================
@@ -114,7 +114,11 @@ function saveData() {
 // ==========================================
 // NAVIGATION (replaces all SayfayaGit_* macros)
 // ==========================================
-function navigateTo(sectionId) {
+function navigateTo(sectionId, updateHistory) {
+  if (updateHistory !== false) {
+    history.pushState({ sectionId: sectionId }, '', '#' + sectionId);
+  }
+
   // Tüm bölümleri gizle, hedefi göster
   document.querySelectorAll('.section').forEach(function(s) {
     s.classList.remove('active');
@@ -150,11 +154,45 @@ function navigateTo(sectionId) {
   }
 }
 
+// Initial history state and popstate listener for back button handling
+window.addEventListener('load', function() {
+  history.replaceState({ sectionId: 'section-dashboard' }, '', '#section-dashboard');
+});
+
+window.addEventListener('popstate', function(event) {
+  var sidebar = document.querySelector('.sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    sidebar.classList.remove('open');
+    var overlay = document.querySelector('.overlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+
+  var editModal = document.getElementById('edit-modal');
+  if (editModal && editModal.classList.contains('show')) {
+    closeEditModal(true);
+  }
+
+  if (event.state && event.state.sectionId) {
+    navigateTo(event.state.sectionId, false);
+  } else if (!event.state || (!event.state.modal && !event.state.sidebar)) {
+    navigateTo('section-dashboard', false);
+  }
+});
+
 function toggleSidebar() {
   var sidebar = document.querySelector('.sidebar');
   var overlay = document.querySelector('.overlay');
-  if (sidebar) sidebar.classList.toggle('open');
-  if (overlay) overlay.classList.toggle('active');
+  if (sidebar && !sidebar.classList.contains('open')) {
+    sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('active');
+    history.pushState({ sidebar: true }, '', location.hash);
+  } else {
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+    if (history.state && history.state.sidebar) {
+      history.back();
+    }
+  }
 }
 
 function refreshSection(sectionId) {
@@ -1340,12 +1378,20 @@ function openEditModal(index) {
   }
 
   var modal = document.getElementById('edit-modal');
-  if (modal) modal.classList.add('show');
+  if (modal) {
+    modal.classList.add('show');
+    history.pushState({ modalOpen: 'edit' }, '', window.location.hash);
+  }
 }
 
-function closeEditModal() {
+function closeEditModal(fromHistory) {
   var modal = document.getElementById('edit-modal');
-  if (modal) modal.classList.remove('show');
+  if (modal && modal.classList.contains('show')) {
+    modal.classList.remove('show');
+    if (fromHistory !== true) {
+      history.back();
+    }
+  }
 }
 
 function saveAnimalEdit() {
@@ -2769,40 +2815,73 @@ function deleteCobanGider(index) {
 function previewPhoto(input, imgId, removeBtnId) {
   if (input.files && input.files[0]) {
     var file = input.files[0];
-    if (!file.type.match('image.*')) {
-      showToast('Lütfen geçerli bir resim dosyası seçin!', 'error');
-      input.value = '';
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var img = new Image();
-      img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var MAX_WIDTH = 400;
-        var MAX_HEIGHT = 400;
-        var width = img.width;
-        var height = img.height;
-        if (width > height) {
-          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-        } else {
-          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.4);
-        var previewImg = document.getElementById(imgId);
-        if (previewImg) { previewImg.src = dataUrl; previewImg.style.display = 'block'; }
-        if (removeBtnId) {
-          var removeBtn = document.getElementById(removeBtnId);
-          if (removeBtn) removeBtn.style.display = 'block';
-        }
+    
+    var processFile = function(fileToProcess) {
+      var fileType = fileToProcess.type || '';
+      if (fileType && !fileType.match('image.*')) {
+        showToast('Lütfen geçerli bir resim dosyası seçin!', 'error');
+        input.value = '';
+        return;
       }
-      img.src = e.target.result;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onerror = function() {
+          showToast('Resim yüklenemedi. Lütfen geçerli bir dosya seçin!', 'error');
+          input.value = '';
+        };
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          var MAX_WIDTH = 400;
+          var MAX_HEIGHT = 400;
+          var width = img.width;
+          var height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+          } else {
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          var dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+          var previewImg = document.getElementById(imgId);
+          if (previewImg) { previewImg.src = dataUrl; previewImg.style.display = 'block'; }
+          if (removeBtnId) {
+            var removeBtn = document.getElementById(removeBtnId);
+            if (removeBtn) removeBtn.style.display = 'block';
+          }
+        }
+        img.src = e.target.result;
+      }
+      reader.readAsDataURL(fileToProcess);
+    };
+
+    var fileName = file.name.replace(/İ/g, 'i').replace(/I/g, 'i').toLowerCase();
+    if (/\.(heic|heif)$/i.test(fileName)) {
+      if (typeof heic2any !== 'undefined') {
+        showToast('HEIC fotoğraf dönüştürülüyor, lütfen bekleyin...', 'info');
+        heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 })
+          .then(function(resultBlob) {
+            var blob = Array.isArray(resultBlob) ? resultBlob[0] : resultBlob;
+            var convertedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+              type: "image/jpeg"
+            });
+            processFile(convertedFile);
+          })
+          .catch(function(error) {
+            console.error('HEIC dönüşüm hatası:', error);
+            showToast('HEIC fotoğraf dönüştürülemedi!', 'error');
+            input.value = '';
+          });
+      } else {
+        showToast('HEIC formatı için dönüştürücü yüklenemedi. Lütfen JPEG/PNG kullanın.', 'error');
+        input.value = '';
+      }
+    } else {
+      processFile(file);
     }
-    reader.readAsDataURL(file);
   } else {
     var previewImg = document.getElementById(imgId);
     if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
