@@ -44,6 +44,7 @@ function loadData() {
       if (!appData.shepherdExpenses) appData.shepherdExpenses = [];
       if (!appData.vaccines) appData.vaccines = [];
       if (!appData.pregnancies) appData.pregnancies = [];
+      if (!appData.feedRations) appData.feedRations = [];
 
       // Local storage backup
       localStorage.setItem('ahirYonetimData', JSON.stringify(appData));
@@ -59,6 +60,7 @@ function loadData() {
       renderCobanGiderList();
       renderVaccineList();
       renderPregnancyList();
+      renderFeedRationList();
       updateReport();
 
       if (isFirstLoad) {
@@ -84,6 +86,7 @@ function loadData() {
       renderCobanGiderList();
       renderVaccineList();
       renderPregnancyList();
+      renderFeedRationList();
       updateReport();
 
       if (isFirstLoad) {
@@ -222,6 +225,10 @@ function refreshSection(sectionId) {
     case 'section-rapor':
       updateReport();
       break;
+    case 'section-yem-rasyon':
+      renderFeedRationList();
+      populateFeedRationSelect();
+      break;
     case 'section-musteri-listesi':
       renderCustomerTable();
       break;
@@ -274,6 +281,154 @@ function showToast(message, type) {
 }
 
 // ==========================================
+// YEM RASYONU FONKSİYONLARI
+// ==========================================
+
+function getFeedStockData() {
+  var feeds = appData.feedPurchases || [];
+  var rations = appData.feedRations || [];
+  
+  // Benzersiz yem türlerini grupla (marka + tür)
+  var stok = {};
+  feeds.forEach(function(f) {
+    var key = (f.yemMarkasi || '').trim() + ' - ' + (f.yemTuru || '').trim();
+    if (!stok[key]) stok[key] = { isim: key, alinan: 0, kullanilan: 0 };
+    stok[key].alinan += (f.adeti || 0);
+  });
+  
+  rations.forEach(function(r) {
+    var key = r.yemIsim || '';
+    if (!stok[key]) stok[key] = { isim: key, alinan: 0, kullanilan: 0 };
+    stok[key].kullanilan += (r.miktar || 0);
+  });
+  
+  var result = [];
+  Object.keys(stok).sort().forEach(function(key) {
+    var item = stok[key];
+    item.kalan = item.alinan - item.kullanilan;
+    result.push(item);
+  });
+  return result;
+}
+
+function populateFeedRationSelect() {
+  var select = document.getElementById('yr-yem');
+  if (!select) return;
+  
+  var feeds = appData.feedPurchases || [];
+  var uniqueFeeds = {};
+  feeds.forEach(function(f) {
+    var key = (f.yemMarkasi || '').trim() + ' - ' + (f.yemTuru || '').trim();
+    if (!uniqueFeeds[key]) uniqueFeeds[key] = true;
+  });
+  
+  var html = '<option value="">-- Yem Seçin --</option>';
+  Object.keys(uniqueFeeds).sort().forEach(function(key) {
+    html += '<option value="' + escapeHtml(key) + '">' + escapeHtml(key) + '</option>';
+  });
+  select.innerHTML = html;
+}
+
+function addFeedRation() {
+  var yemIsim = (document.getElementById('yr-yem')?.value || '').trim();
+  var miktar = parseInt(document.getElementById('yr-miktar')?.value) || 0;
+  var tarih = document.getElementById('yr-tarih')?.value || '';
+  var aciklama = (document.getElementById('yr-aciklama')?.value || '').trim();
+  
+  if (!yemIsim) {
+    showToast('Lütfen bir yem seçin!', 'error');
+    return;
+  }
+  if (miktar <= 0) {
+    showToast('Lütfen geçerli bir adet girin!', 'error');
+    return;
+  }
+  
+  // Stok kontrolü
+  var stokData = getFeedStockData();
+  var mevcutYem = stokData.find(function(s) { return s.isim === yemIsim; });
+  if (mevcutYem && miktar > mevcutYem.kalan) {
+    showToast('Yetersiz stok! ' + yemIsim + ' için kalan: ' + mevcutYem.kalan + ' adet.', 'error');
+    return;
+  }
+  
+  if (!appData.feedRations) appData.feedRations = [];
+  
+  appData.feedRations.push({
+    yemIsim: yemIsim,
+    miktar: miktar,
+    tarih: tarih || new Date().toISOString().split('T')[0],
+    aciklama: aciklama
+  });
+  
+  saveData();
+  showToast(yemIsim + ' için ' + miktar + ' adet kullanım kaydedildi.');
+  
+  var form = document.getElementById('form-yem-rasyon');
+  if (form) form.reset();
+  
+  // Tarihi tekrar bugüne ayarla
+  var yrTarih = document.getElementById('yr-tarih');
+  if (yrTarih) yrTarih.value = new Date().toISOString().split('T')[0];
+  
+  renderFeedRationList();
+  populateFeedRationSelect();
+  updateReport();
+}
+
+function renderFeedRationList() {
+  // Stok kartlarını güncelle
+  var stokGrid = document.getElementById('rasyon-stok-grid');
+  if (stokGrid) {
+    var stokData = getFeedStockData();
+    var stokHtml = '';
+    if (stokData.length === 0) {
+      stokHtml = '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">0</div><div class="stat-label">Henüz yem kaydı yok</div></div>';
+    } else {
+      stokData.forEach(function(item) {
+        var renk = item.kalan <= 0 ? '#ef4444' : (item.kalan <= 5 ? '#f59e0b' : '#10b981');
+        var durum = item.kalan <= 0 ? '⚠️ Tükenmiş' : (item.kalan <= 5 ? '⚠️ Azalıyor' : '✅ Yeterli');
+        stokHtml += '<div class="stat-card">' +
+          '<div class="stat-icon">🌾</div>' +
+          '<div class="stat-value" style="color:' + renk + ';">' + item.kalan + '</div>' +
+          '<div class="stat-label">' + escapeHtml(item.isim) + '</div>' +
+          '<div class="stat-sub" style="font-size:0.75em; color:var(--color-text-secondary); margin-top:4px;">Alınan: ' + item.alinan + ' | Kullanılan: ' + item.kullanilan + '</div>' +
+          '<div style="font-size:0.7em; margin-top:2px; font-weight:bold; color:' + renk + ';">' + durum + '</div>' +
+        '</div>';
+      });
+    }
+    stokGrid.innerHTML = stokHtml;
+  }
+  
+  // Tablo güncelle
+  var tbody = document.querySelector('#table-yem-rasyon tbody');
+  if (!tbody) return;
+  
+  var rations = appData.feedRations || [];
+  
+  if (rations.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: #6b7280;">Yem kullanım kaydı bulunmamaktadır</td></tr>';
+    return;
+  }
+  
+  // En yeni kayıtlar üstte
+  var sortedRations = rations.map(function(r, i) { return { data: r, index: i }; });
+  sortedRations.sort(function(a, b) {
+    return (b.data.tarih || '').localeCompare(a.data.tarih || '');
+  });
+  
+  tbody.innerHTML = sortedRations.map(function(item) {
+    var r = item.data;
+    return '<tr>' +
+      '<td data-label="Seç"><input type="checkbox" class="row-checkbox" value="' + item.index + '"></td>' +
+      '<td data-label="Tarih">' + formatDate(r.tarih) + '</td>' +
+      '<td data-label="Yem" class="font-bold">' + escapeHtml(r.yemIsim) + '</td>' +
+      '<td data-label="Kullanılan Adet">' + r.miktar + '</td>' +
+      '<td data-label="Açıklama">' + escapeHtml(r.aciklama || '-') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
 // HAYVAN EKLE (replaces HayvanEkle VBA macro)
 // ==========================================
 function addAnimal() {
@@ -1262,6 +1417,23 @@ function updateReport() {
     });
     irkContainer.innerHTML = irkHtml || '<p>Kayıt bulunamadı.</p>';
   }
+
+  // Yem Rasyonu Özet
+  var rasyonContainer = document.getElementById('rapor-rasyon-grid');
+  if (rasyonContainer) {
+    var stokData = getFeedStockData();
+    var rasyonHtml = '';
+    stokData.forEach(function(item) {
+      var renk = item.kalan <= 0 ? '#ef4444' : (item.kalan <= 5 ? '#f59e0b' : '#10b981');
+      rasyonHtml += '<div class="stat-card">' +
+        '<div class="stat-icon">🌾</div>' +
+        '<div class="stat-value" style="color:' + renk + ';">' + item.kalan + '</div>' +
+        '<div class="stat-label">' + escapeHtml(item.isim) + '</div>' +
+        '<div class="stat-sub" style="font-size:0.75em; color:var(--color-text-secondary); margin-top:4px;">Alınan: ' + item.alinan + ' | Kullanılan: ' + item.kullanilan + '</div>' +
+      '</div>';
+    });
+    rasyonContainer.innerHTML = rasyonHtml || '<p>Yem rasyonu kaydı bulunamadı.</p>';
+  }
 }
 
 // ==========================================
@@ -1852,6 +2024,7 @@ function deleteSelected(type) {
   else if (type === 'sales') { tableId = '#table-kurbanlik-satisi'; dataArray = appData.sales; renderFunc = renderSalesTable; }
   else if (type === 'feeds') { tableId = '#table-yem-veri'; dataArray = appData.feedPurchases; renderFunc = renderFeedTable; }
   else if (type === 'vets') { tableId = '#table-vet-veri'; dataArray = appData.vetExpenses; renderFunc = renderVetTable; }
+  else if (type === 'feedRations') { tableId = '#table-yem-rasyon'; dataArray = appData.feedRations; renderFunc = renderFeedRationList; }
 
   var checkboxes = document.querySelectorAll(tableId + ' tbody .row-checkbox:checked');
   if (checkboxes.length === 0) {
