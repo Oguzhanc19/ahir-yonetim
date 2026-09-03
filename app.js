@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // ALİ AHIR - AHIR YÖNETİM SİSTEMİ
 // Tam Uygulama Mantığı (app.js)
 // ==========================================
@@ -24,6 +24,20 @@ const db = firebase.database();
 
 let appData = {};
 let isFirstLoad = true;
+
+// Firebase Anonymous Authentication - Güvenlik için
+// Kullanıcı uygulamayı açtığında otomatik olarak anonim giriş yapar
+// Bu sayede veritabanı kuralları "auth != null" olarak ayarlanabilir
+firebase.auth().signInAnonymously().catch(function(error) {
+  console.error('Anonim giriş hatası:', error);
+});
+
+firebase.auth().onAuthStateChanged(function(user) {
+  if (user) {
+    console.log('Firebase Auth aktif - UID:', user.uid);
+    loadData();
+  }
+});
 
 function loadData() {
   db.ref('ahirData').on('value', function(snapshot) {
@@ -1898,8 +1912,7 @@ if ('serviceWorker' in navigator) {
 // EVENT LISTENERS & INIT
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
-  // Veriyi arkaplanda yükle ki login ekranında users hazır olsun
-  loadData();
+  // loadData() artık firebase.auth().onAuthStateChanged içinde çağrılıyor
 
   // Login kontrolü (Eğer login değilse popup açılır)
   checkLogin();
@@ -3086,3 +3099,4 @@ function updateKupeList() {
   });
   dataList.innerHTML = html;
 }
+
